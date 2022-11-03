@@ -43,6 +43,8 @@ contract AligatorOffchainAuthority {
 
     event SubDelegation(address indexed from, address indexed to, bool indexed status);
 
+    error NotDelegated(address from, address to);
+
     constructor(IGovernorBravo _governor) {
         owner = msg.sender;
         governor = _governor;
@@ -63,9 +65,9 @@ contract AligatorOffchainAuthority {
         for (uint256 i = 0; i < authority.length; i++) {
             address to = authority[i];
             if (!subDelegations[account][to]) {
-                return false;
+                revert NotDelegated(account, to);
             }
-            to = account;
+            account = to;
         }
 
         return account == msg.sender;
