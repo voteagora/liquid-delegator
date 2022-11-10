@@ -24,7 +24,7 @@ contract AligatorTest is Test {
         address[] memory authority = new address[](1);
         authority[0] = address(Utils.alice);
 
-        aligator.subDelegate(Utils.alice, true);
+        aligator.subDelegate(Utils.alice, "1");
         vm.prank(Utils.alice);
         aligator.castVote(authority, 1, 1);
     }
@@ -35,11 +35,11 @@ contract AligatorTest is Test {
         authority[1] = address(Utils.bob);
         authority[2] = address(Utils.carol);
 
-        aligator.subDelegate(Utils.alice, true);
+        aligator.subDelegate(Utils.alice, "1");
         vm.prank(Utils.alice);
-        aligator.subDelegate(Utils.bob, true);
+        aligator.subDelegate(Utils.bob, "1");
         vm.prank(Utils.bob);
-        aligator.subDelegate(Utils.carol, true);
+        aligator.subDelegate(Utils.carol, "1");
 
         vm.prank(Utils.carol);
         aligator.castVote(authority, 1, 1);
@@ -51,14 +51,14 @@ contract AligatorTest is Test {
         authority[1] = address(Utils.bob);
         authority[2] = address(Utils.carol);
 
-        aligator.subDelegate(Utils.alice, true);
+        aligator.subDelegate(Utils.alice, "1");
         vm.prank(Utils.alice);
-        aligator.subDelegate(Utils.bob, true);
+        aligator.subDelegate(Utils.bob, "1");
         vm.prank(Utils.bob);
-        aligator.subDelegate(Utils.carol, true);
+        aligator.subDelegate(Utils.carol, "1");
 
         vm.prank(Utils.alice);
-        aligator.subDelegate(Utils.bob, false);
+        aligator.subDelegate(Utils.bob, "");
 
         vm.prank(Utils.carol);
         vm.expectRevert();
