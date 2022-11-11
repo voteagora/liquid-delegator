@@ -184,7 +184,7 @@ contract AligatorWithRules {
                 revert TooEarly(account, to, rules.blocksBeforeVoteCloses);
             }
             if (rules.customRule != address(0)) {
-                bytes4 selector = IRule(rules.customRule).validate(sender, proposalId, support);
+                bytes4 selector = IRule(rules.customRule).validate(address(governor), sender, proposalId, support);
                 if (selector != IRule.validate.selector) {
                     revert InvalidCustomRule(rules.customRule);
                 }
