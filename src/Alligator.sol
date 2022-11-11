@@ -83,16 +83,13 @@ contract AlligatorWithRules {
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
     event SubDelegation(address indexed from, address indexed to, Rules rules);
-    // Emit event when casting vote
+    event VoteCast(address indexed voter, address[] authority, uint256 proposalId, uint8 support);
 
     error BadSignature();
-
     error NotDelegated(address from, address to, uint8 requiredPermissions);
     error NotValidYet(address from, address to, uint32 willBeValidFrom);
     error NotValidAnymore(address from, address to, uint32 wasValidUntil);
     error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
-
-    error ChainTooLong();
     error InvalidCustomRule(address customRule);
 
     constructor(address _owner, INounsDAOV2 _governor) {
@@ -108,6 +105,7 @@ contract AlligatorWithRules {
         bytes[] calldata calldatas,
         string calldata description
     ) external returns (uint256 proposalId) {
+        // Create a proposal first so the custom rules can validate it
         proposalId = governor.propose(targets, values, signatures, calldatas, description);
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
@@ -115,6 +113,7 @@ contract AlligatorWithRules {
     function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
         governor.castVote(proposalId, support);
+        emit VoteCast(msg.sender, authority, proposalId, support);
     }
 
     function castVoteWithReason(address[] calldata authority, uint256 proposalId, uint8 support, string calldata reason)
@@ -122,6 +121,7 @@ contract AlligatorWithRules {
     {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
         governor.castVoteWithReason(proposalId, support, reason);
+        emit VoteCast(msg.sender, authority, proposalId, support);
     }
 
     function castVoteBySig(
@@ -144,6 +144,7 @@ contract AlligatorWithRules {
 
         validate(signatory, authority, PERMISSION_VOTE, proposalId, support);
         governor.castVote(proposalId, support);
+        emit VoteCast(signatory, authority, proposalId, support);
     }
 
     function subDelegate(address to, Rules calldata rules) external {
