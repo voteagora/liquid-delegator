@@ -5,8 +5,8 @@ import {IGovernorBravo} from "./interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
 import {IRule} from "./interfaces/IRule.sol";
 
-// Batch vote from different aligators
-// How will the frontend know which aligators are available?
+// Batch vote from different alligators
+// How will the frontend know which alligators are available?
 // How Prop House works: signatures EIP-1271
 
 struct Delegation {
@@ -17,7 +17,7 @@ struct Delegation {
 
 /*
 
-Seneca uses Aligator
+Seneca uses Alligator
 Seneca appoints Alex
 Seneca appoints Bob
 Alex appoints Yitong
@@ -30,7 +30,7 @@ the delegation process
 
 Or maybe we don't let appoint more than 1 person?
 
-Seneca uses Aligator
+Seneca uses Alligator
 Seneca appoints Alex
 Alex appoints Yitong
 
@@ -68,7 +68,7 @@ struct Rules {
     address customRule;
 }
 
-contract AligatorWithRules {
+contract AlligatorWithRules {
     address public immutable owner;
     INounsDAOV2 public immutable governor;
     mapping(address => mapping(address => Rules)) public subDelegations;
@@ -133,7 +133,7 @@ contract AligatorWithRules {
         bytes32 s
     ) external {
         bytes32 domainSeparator =
-            keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Aligator"), block.chainid, address(this)));
+            keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Alligator"), block.chainid, address(this)));
         bytes32 structHash = keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
@@ -201,18 +201,18 @@ contract AligatorWithRules {
     }
 }
 
-contract AligatorFactory {
+contract AlligatorFactory {
     INounsDAOV2 public immutable governor;
 
-    event AligatorDeployed(address indexed owner, address aligator);
+    event AlligatorDeployed(address indexed owner, address alligator);
 
     constructor(INounsDAOV2 _governor) {
         governor = _governor;
     }
 
-    function create(address owner) external returns (AligatorWithRules aligator) {
+    function create(address owner) external returns (AlligatorWithRules alligator) {
         bytes32 salt = bytes32(uint256(uint160(owner)));
-        aligator = new AligatorWithRules{salt: salt}(owner, governor);
-        emit AligatorDeployed(owner, address(aligator));
+        alligator = new AlligatorWithRules{salt: salt}(owner, governor);
+        emit AlligatorDeployed(owner, address(alligator));
     }
 }

@@ -4,23 +4,23 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
-import "../src/Aligator.sol";
+import "../src/Alligator.sol";
 import "./Utils.sol";
 
-contract AligatorTest is Test {
-    AligatorFactory public factory;
-    AligatorWithRules public aligator;
+contract AlligatorTest is Test {
+    AlligatorFactory public factory;
+    AlligatorWithRules public alligator;
     NounsDAO public nounsDAO;
 
     function setUp() public {
         nounsDAO = new NounsDAO();
-        factory = new AligatorFactory(nounsDAO);
-        aligator = factory.create(address(this));
+        factory = new AlligatorFactory(nounsDAO);
+        alligator = factory.create(address(this));
     }
 
     function testVote() public {
         address[] memory authority = new address[](0);
-        aligator.castVote(authority, 1, 1);
+        alligator.castVote(authority, 1, 1);
     }
 
     function testSubDelegate() public {
@@ -36,9 +36,9 @@ contract AligatorTest is Test {
             customRule: address(0)
         });
 
-        aligator.subDelegate(Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
-        aligator.castVote(authority, 1, 1);
+        alligator.castVote(authority, 1, 1);
     }
 
     function testNestedSubDelegate() public {
@@ -56,14 +56,14 @@ contract AligatorTest is Test {
             customRule: address(0)
         });
 
-        aligator.subDelegate(Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
-        aligator.subDelegate(Utils.bob, rules);
+        alligator.subDelegate(Utils.bob, rules);
         vm.prank(Utils.bob);
-        aligator.subDelegate(Utils.carol, rules);
+        alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.carol);
-        aligator.castVote(authority, 1, 1);
+        alligator.castVote(authority, 1, 1);
     }
 
     function testNestedUnDelegate() public {
@@ -81,14 +81,14 @@ contract AligatorTest is Test {
             customRule: address(0)
         });
 
-        aligator.subDelegate(Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
-        aligator.subDelegate(Utils.bob, rules);
+        alligator.subDelegate(Utils.bob, rules);
         vm.prank(Utils.bob);
-        aligator.subDelegate(Utils.carol, rules);
+        alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.alice);
-        aligator.subDelegate(
+        alligator.subDelegate(
             Utils.bob,
             Rules({
                 permissions: 0,
@@ -102,7 +102,7 @@ contract AligatorTest is Test {
 
         vm.prank(Utils.carol);
         vm.expectRevert();
-        aligator.castVote(authority, 1, 1);
+        alligator.castVote(authority, 1, 1);
     }
 }
 
