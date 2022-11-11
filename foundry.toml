@@ -7,4 +7,4 @@ libs = ['lib']
 
 optimizer = true
 optimizer_runs = 20_000
-via_ir = true
+# via_ir = true

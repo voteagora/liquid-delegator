@@ -28,7 +28,7 @@ contract AligatorTest is Test {
         authority[0] = address(Utils.alice);
 
         Rules memory rules = Rules({
-            permissions: 0x02,
+            permissions: 0x01,
             maxRedelegations: 1,
             notValidBefore: 0,
             notValidAfter: 0,
@@ -48,7 +48,7 @@ contract AligatorTest is Test {
         authority[2] = address(Utils.carol);
 
         Rules memory rules = Rules({
-            permissions: 0x02,
+            permissions: 0x01,
             maxRedelegations: 1,
             notValidBefore: 0,
             notValidAfter: 0,
@@ -73,7 +73,7 @@ contract AligatorTest is Test {
         authority[2] = address(Utils.carol);
 
         Rules memory rules = Rules({
-            permissions: 0x02,
+            permissions: 0x01,
             maxRedelegations: 1,
             notValidBefore: 0,
             notValidAfter: 0,

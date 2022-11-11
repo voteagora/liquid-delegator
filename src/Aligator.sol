@@ -73,9 +73,9 @@ contract AligatorWithRules {
     INounsDAOV2 public immutable governor;
     mapping(address => mapping(address => Rules)) public subDelegations;
 
-    uint8 internal constant PERMISSION_PROPOSE = 0x01;
-    uint8 internal constant PERMISSION_VOTE = 0x02;
-    uint8 internal constant PERMISSION_SIGN = 0x04;
+    uint8 internal constant PERMISSION_VOTE = 0x01;
+    uint8 internal constant PERMISSION_SIGN = 0x02;
+    uint8 internal constant PERMISSION_PROPOSE = 0x04;
 
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -87,9 +87,9 @@ contract AligatorWithRules {
 
     error BadSignature();
 
-    error NotDelegated(address from, address to, uint8 permissions);
-    error NotValidYet(address from, address to, uint32 notValidBefore);
-    error NotValidAnymore(address from, address to, uint32 notValidAfter);
+    error NotDelegated(address from, address to, uint8 requiredPermissions);
+    error NotValidYet(address from, address to, uint32 willBeValidFrom);
+    error NotValidAnymore(address from, address to, uint32 wasValidUntil);
     error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
 
     error ChainTooLong();
