@@ -15,29 +15,6 @@ struct Delegation {
     uint256 redelegations;
 }
 
-/*
-
-Seneca uses Alligator
-Seneca appoints Alex
-Seneca appoints Bob
-Alex appoints Yitong
-Seneca unappoints Alex
-Yitong can't vote
-Bob can vote
-
-Or maybe we compute whenever someone can vote during 
-the delegation process
-
-Or maybe we don't let appoint more than 1 person?
-
-Seneca uses Alligator
-Seneca appoints Alex
-Alex appoints Yitong
-
-Can Yitong vote? Need to either supply the voting authority chain
-or the voting authority chain needs to be stored in the contract
-*/
-
 // Rules
 // - Sub-delegate up to X times
 // - Sub-delegate for X amount of time
