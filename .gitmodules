@@ -4,3 +4,6 @@
 [submodule "lib/nouns-monorepo"]
 	path = lib/nouns-monorepo
 	url = https://github.com/nounsDAO/nouns-monorepo
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
