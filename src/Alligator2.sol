@@ -14,7 +14,7 @@ struct Rules {
     address customRule;
 }
 
-contract Endpoint {
+contract Proxy {
     address internal immutable owner;
     address internal immutable governor;
 
@@ -53,24 +53,26 @@ contract Alligator2 {
 
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
-    event AlligatorDeployed(address indexed owner, address alligator);
-    event SubDelegation(address indexed root, address indexed from, address indexed to, Rules rules);
-    event VoteCast(address indexed root, address indexed voter, address[] authority, uint256 proposalId, uint8 support);
+    event ProxyDeployed(address indexed owner, address proxy);
+    event SubDelegation(address indexed proxy, address indexed from, address indexed to, Rules rules);
+    event VoteCast(
+        address indexed proxy, address indexed voter, address[] authority, uint256 proposalId, uint8 support
+    );
 
     error BadSignature();
-    error NotDelegated(address root, address from, address to, uint8 requiredPermissions);
-    error NotValidYet(address root, address from, address to, uint32 willBeValidFrom);
-    error NotValidAnymore(address root, address from, address to, uint32 wasValidUntil);
-    error TooEarly(address root, address from, address to, uint32 blocksBeforeVoteCloses);
-    error InvalidCustomRule(address root, address customRule);
+    error NotDelegated(address proxy, address from, address to, uint8 requiredPermissions);
+    error NotValidYet(address proxy, address from, address to, uint32 willBeValidFrom);
+    error NotValidAnymore(address proxy, address from, address to, uint32 wasValidUntil);
+    error TooEarly(address proxy, address from, address to, uint32 blocksBeforeVoteCloses);
+    error InvalidCustomRule(address proxy, address customRule);
 
     constructor(INounsDAOV2 _governor) {
         governor = _governor;
     }
 
     function create(address owner) external returns (address endpoint) {
-        endpoint = address(new Endpoint(address(governor)));
-        emit AlligatorDeployed(owner, endpoint);
+        endpoint = address(new Proxy(address(governor)));
+        emit ProxyDeployed(owner, endpoint);
 
         owners[endpoint] = owner;
     }
@@ -125,9 +127,9 @@ contract Alligator2 {
         emit VoteCast(authority[0], signatory, authority, proposalId, support);
     }
 
-    function subDelegate(address root, address to, Rules calldata rules) external {
-        subDelegations[root][msg.sender][to] = rules;
-        emit SubDelegation(root, msg.sender, to, rules);
+    function subDelegate(address proxy, address to, Rules calldata rules) external {
+        subDelegations[proxy][msg.sender][to] = rules;
+        emit SubDelegation(proxy, msg.sender, to, rules);
     }
 
     function validate(
@@ -137,8 +139,8 @@ contract Alligator2 {
         uint256 proposalId,
         uint8 support
     ) internal view {
-        address root = authority[0];
-        address account = owners[root];
+        address proxy = authority[0];
+        address account = owners[proxy];
 
         if (account == sender) {
             return;
@@ -148,25 +150,25 @@ contract Alligator2 {
 
         for (uint256 i = 1; i < authority.length; i++) {
             address to = authority[i];
-            Rules memory rules = subDelegations[root][account][to];
+            Rules memory rules = subDelegations[proxy][account][to];
 
             if (rules.permissions & permissions != permissions) {
-                revert NotDelegated(root, account, to, permissions);
+                revert NotDelegated(proxy, account, to, permissions);
             }
             // TODO: check redelegations limit
             if (block.timestamp < rules.notValidBefore) {
-                revert NotValidYet(root, account, to, rules.notValidBefore);
+                revert NotValidYet(proxy, account, to, rules.notValidBefore);
             }
             if (rules.notValidAfter != 0 && block.timestamp > rules.notValidAfter) {
-                revert NotValidAnymore(root, account, to, rules.notValidAfter);
+                revert NotValidAnymore(proxy, account, to, rules.notValidAfter);
             }
             if (rules.blocksBeforeVoteCloses != 0 && proposal.endBlock - block.number > rules.blocksBeforeVoteCloses) {
-                revert TooEarly(root, account, to, rules.blocksBeforeVoteCloses);
+                revert TooEarly(proxy, account, to, rules.blocksBeforeVoteCloses);
             }
             if (rules.customRule != address(0)) {
                 bytes4 selector = IRule(rules.customRule).validate(address(governor), sender, proposalId, support);
                 if (selector != IRule.validate.selector) {
-                    revert InvalidCustomRule(root, rules.customRule);
+                    revert InvalidCustomRule(proxy, rules.customRule);
                 }
             }
 
@@ -177,6 +179,6 @@ contract Alligator2 {
             return;
         }
 
-        revert NotDelegated(root, account, sender, permissions);
+        revert NotDelegated(proxy, account, sender, permissions);
     }
 }
