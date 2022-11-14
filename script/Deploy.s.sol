@@ -8,8 +8,11 @@ import {NounsDAOLogicV2} from "noun-contracts/governance/NounsDAOLogicV2.sol";
 import {NounsDAOProxyV2} from "noun-contracts/governance/NounsDAOProxyV2.sol";
 import {NounsDAOStorageV2} from "noun-contracts/governance/NounsDAOInterfaces.sol";
 import {NounsDescriptor} from "noun-contracts/NounsDescriptor.sol";
-import {NounsToken} from "noun-contracts/NounsToken.sol";
+import {FreeNounsTonken} from "./FreeNounsToken.sol";
 import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
+import {AlligatorFactory, AlligatorWithRules} from "../src/Alligator.sol";
+import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
+import {DescriptorImageData} from "./DescriptorImageData.sol";
 
 contract DeployScript is Script {
     uint256 constant TIMELOCK_DELAY = 2 days;
@@ -33,7 +36,23 @@ contract DeployScript is Script {
 
         NounsDAOExecutor timelock = new NounsDAOExecutor(address(1), TIMELOCK_DELAY);
         NounsDescriptor descriptor = new NounsDescriptor();
-        NounsToken nounsToken = new NounsToken(noundersDAO, minter, descriptor, new NounsSeeder(), proxyRegistry);
+
+        {
+            string[] memory strs = new string[](1);
+            strs[0] = "#fff";
+            bytes[] memory bts = new bytes[](1);
+            bts[0] = bytes(strs[0]);
+
+            descriptor.addManyBackgrounds(strs);
+            descriptor.addManyColorsToPalette(0, strs);
+            descriptor.addManyBodies(bts);
+            descriptor.addManyAccessories(bts);
+            descriptor.addManyHeads(bts);
+            descriptor.addManyGlasses(bts);
+        }
+
+        FreeNounsTonken nounsToken =
+            new FreeNounsTonken(noundersDAO, minter, descriptor, new NounsSeeder(), proxyRegistry);
         NounsDAOProxyV2 proxy = new NounsDAOProxyV2(
             address(timelock),
             address(nounsToken),
@@ -45,5 +64,13 @@ contract DeployScript is Script {
             PROPOSAL_THRESHOLD,
             NounsDAOStorageV2.DynamicQuorumParams(QUORUM_VOTES_BPS, QUORUM_VOTES_BPS, 0)
         );
+
+        nounsToken.mint(deployer, 1);
+        nounsToken.mint(deployer, 2);
+        nounsToken.mint(deployer, 3);
+
+        AlligatorFactory factory = new AlligatorFactory(INounsDAOV2(address(proxy)));
+        AlligatorWithRules alligator = factory.create(deployer);
+        nounsToken.delegate(address(alligator));
     }
 }
