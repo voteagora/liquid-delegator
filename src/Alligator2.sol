@@ -29,7 +29,7 @@ contract Endpoint {
 
         assembly {
             calldatacopy(0, 0, calldatasize())
-            let result := delegatecall(gas(), addr, 0, calldatasize(), 0, 0)
+            let result := call(gas(), addr, callvalue(), 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             switch result
             case 0 { revert(0, returndatasize()) }
@@ -54,15 +54,15 @@ contract Alligator2 {
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
     event AlligatorDeployed(address indexed owner, address alligator);
-    event SubDelegation(address indexed from, address indexed to, Rules rules);
-    event VoteCast(address indexed voter, address[] authority, uint256 proposalId, uint8 support);
+    event SubDelegation(address indexed root, address indexed from, address indexed to, Rules rules);
+    event VoteCast(address indexed root, address indexed voter, address[] authority, uint256 proposalId, uint8 support);
 
     error BadSignature();
-    error NotDelegated(address from, address to, uint8 requiredPermissions);
-    error NotValidYet(address from, address to, uint32 willBeValidFrom);
-    error NotValidAnymore(address from, address to, uint32 wasValidUntil);
-    error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
-    error InvalidCustomRule(address customRule);
+    error NotDelegated(address root, address from, address to, uint8 requiredPermissions);
+    error NotValidYet(address root, address from, address to, uint32 willBeValidFrom);
+    error NotValidAnymore(address root, address from, address to, uint32 wasValidUntil);
+    error TooEarly(address root, address from, address to, uint32 blocksBeforeVoteCloses);
+    error InvalidCustomRule(address root, address customRule);
 
     constructor(INounsDAOV2 _governor) {
         governor = _governor;
@@ -84,22 +84,22 @@ contract Alligator2 {
         string calldata description
     ) external returns (uint256 proposalId) {
         // Create a proposal first so the custom rules can validate it
-        proposalId = governor.propose(targets, values, signatures, calldatas, description);
+        proposalId = INounsDAOV2(authority[0]).propose(targets, values, signatures, calldatas, description);
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
     function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
-        governor.castVote(proposalId, support);
-        emit VoteCast(msg.sender, authority, proposalId, support);
+        INounsDAOV2(authority[0]).castVote(proposalId, support);
+        emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
     }
 
     function castVoteWithReason(address[] calldata authority, uint256 proposalId, uint8 support, string calldata reason)
         external
     {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
-        governor.castVoteWithReason(proposalId, support, reason);
-        emit VoteCast(msg.sender, authority, proposalId, support);
+        INounsDAOV2(authority[0]).castVoteWithReason(proposalId, support, reason);
+        emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
     }
 
     function castVoteBySig(
@@ -121,13 +121,13 @@ contract Alligator2 {
         }
 
         validate(signatory, authority, PERMISSION_VOTE, proposalId, support);
-        governor.castVote(proposalId, support);
-        emit VoteCast(signatory, authority, proposalId, support);
+        INounsDAOV2(authority[0]).castVote(proposalId, support);
+        emit VoteCast(authority[0], signatory, authority, proposalId, support);
     }
 
     function subDelegate(address root, address to, Rules calldata rules) external {
         subDelegations[root][msg.sender][to] = rules;
-        emit SubDelegation(msg.sender, to, rules);
+        emit SubDelegation(root, msg.sender, to, rules);
     }
 
     function validate(
@@ -146,27 +146,27 @@ contract Alligator2 {
 
         INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
 
-        for (uint256 i = 0; i < authority.length; i++) {
+        for (uint256 i = 1; i < authority.length; i++) {
             address to = authority[i];
             Rules memory rules = subDelegations[root][account][to];
 
             if (rules.permissions & permissions != permissions) {
-                revert NotDelegated(account, to, permissions);
+                revert NotDelegated(root, account, to, permissions);
             }
             // TODO: check redelegations limit
             if (block.timestamp < rules.notValidBefore) {
-                revert NotValidYet(account, to, rules.notValidBefore);
+                revert NotValidYet(root, account, to, rules.notValidBefore);
             }
             if (rules.notValidAfter != 0 && block.timestamp > rules.notValidAfter) {
-                revert NotValidAnymore(account, to, rules.notValidAfter);
+                revert NotValidAnymore(root, account, to, rules.notValidAfter);
             }
             if (rules.blocksBeforeVoteCloses != 0 && proposal.endBlock - block.number > rules.blocksBeforeVoteCloses) {
-                revert TooEarly(account, to, rules.blocksBeforeVoteCloses);
+                revert TooEarly(root, account, to, rules.blocksBeforeVoteCloses);
             }
             if (rules.customRule != address(0)) {
                 bytes4 selector = IRule(rules.customRule).validate(address(governor), sender, proposalId, support);
                 if (selector != IRule.validate.selector) {
-                    revert InvalidCustomRule(rules.customRule);
+                    revert InvalidCustomRule(root, rules.customRule);
                 }
             }
 
@@ -177,6 +177,6 @@ contract Alligator2 {
             return;
         }
 
-        revert NotDelegated(account, sender, permissions);
+        revert NotDelegated(root, account, sender, permissions);
     }
 }
