@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import "../src/Alligator2.sol";
@@ -110,6 +111,93 @@ contract Alligator2Test is Test {
         vm.prank(Utils.carol);
         vm.expectRevert();
         alligator.castVote(authority, 1, 1);
+    }
+
+    function testSupportsSigning() public {
+        bytes32 hash1 = keccak256(abi.encodePacked("pass"));
+        bytes32 hash2 = keccak256(abi.encodePacked("fail"));
+
+        assertEq(IERC1271(root).isValidSignature(hash2, ""), bytes4(0));
+
+        address[] memory authority = new address[](1);
+        authority[0] = root;
+        alligator.sign(authority, hash1);
+
+        assertEq(IERC1271(root).isValidSignature(hash1, ""), IERC1271.isValidSignature.selector);
+        assertEq(IERC1271(root).isValidSignature(hash2, ""), bytes4(0));
+    }
+
+    function testNestedSubDelegateSigning() public {
+        bytes32 hash1 = keccak256(abi.encodePacked("pass"));
+
+        address[] memory authority = new address[](4);
+        authority[0] = root;
+        authority[1] = Utils.alice;
+        authority[2] = Utils.bob;
+        authority[3] = Utils.carol;
+
+        Rules memory rules = Rules({
+            permissions: 0x02,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(root, Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligator.subDelegate(root, Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligator.subDelegate(root, Utils.carol, rules);
+
+        vm.prank(Utils.carol);
+        alligator.sign(authority, hash1);
+        assertEq(IERC1271(root).isValidSignature(hash1, ""), IERC1271.isValidSignature.selector);
+    }
+
+    function testNestedUnDelegateSigning() public {
+        bytes32 hash1 = keccak256(abi.encodePacked("pass"));
+
+        address[] memory authority = new address[](4);
+        authority[0] = root;
+        authority[1] = Utils.alice;
+        authority[2] = Utils.bob;
+        authority[3] = Utils.carol;
+
+        Rules memory rules = Rules({
+            permissions: 0x02,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(root, Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligator.subDelegate(root, Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligator.subDelegate(root, Utils.carol, rules);
+
+        vm.prank(Utils.alice);
+        alligator.subDelegate(
+            root,
+            Utils.bob,
+            Rules({
+                permissions: 0,
+                maxRedelegations: 0,
+                notValidBefore: 0,
+                notValidAfter: 0,
+                blocksBeforeVoteCloses: 0,
+                customRule: address(0)
+            })
+        );
+
+        vm.prank(Utils.carol);
+        vm.expectRevert();
+        alligator.sign(authority, hash1);
+        assertEq(IERC1271(root).isValidSignature(hash1, ""), bytes4(0));
     }
 }
 

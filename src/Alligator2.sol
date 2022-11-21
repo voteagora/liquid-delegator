@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {IGovernorBravo} from "./interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
 import {IRule} from "./interfaces/IRule.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 struct Rules {
     uint8 permissions;
@@ -14,13 +15,17 @@ struct Rules {
     address customRule;
 }
 
-contract Proxy {
+contract Proxy is IERC1271 {
     address internal immutable owner;
     address internal immutable governor;
 
     constructor(address _governor) {
         owner = msg.sender;
         governor = _governor;
+    }
+
+    function isValidSignature(bytes32 hash, bytes memory signature) public view override returns (bytes4 magicValue) {
+        return Alligator2(owner).isValidProxySignature(address(this), hash, signature);
     }
 
     fallback() external payable {
@@ -43,6 +48,7 @@ contract Alligator2 {
 
     mapping(address => address) owners;
     mapping(address => mapping(address => mapping(address => Rules))) public subDelegations;
+    mapping(address => mapping(bytes32 => bool)) internal validSignatures;
 
     uint8 internal constant PERMISSION_VOTE = 0x01;
     uint8 internal constant PERMISSION_SIGN = 0x02;
@@ -58,6 +64,7 @@ contract Alligator2 {
     event VoteCast(
         address indexed proxy, address indexed voter, address[] authority, uint256 proposalId, uint8 support
     );
+    event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
 
     error BadSignature();
     error NotDelegated(address proxy, address from, address to, uint8 requiredPermissions);
@@ -125,6 +132,16 @@ contract Alligator2 {
         validate(signatory, authority, PERMISSION_VOTE, proposalId, support);
         INounsDAOV2(authority[0]).castVote(proposalId, support);
         emit VoteCast(authority[0], signatory, authority, proposalId, support);
+    }
+
+    function sign(address[] calldata authority, bytes32 hash) external {
+        validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
+        validSignatures[authority[0]][hash] = true;
+        emit Signed(authority[0], authority, hash);
+    }
+
+    function isValidProxySignature(address proxy, bytes32 hash, bytes memory) public view returns (bytes4 magicValue) {
+        return validSignatures[proxy][hash] ? IERC1271.isValidSignature.selector : bytes4(0);
     }
 
     function subDelegate(address proxy, address to, Rules calldata rules) external {
