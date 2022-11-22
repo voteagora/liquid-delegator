@@ -10,7 +10,7 @@ import {NounsDAOStorageV2} from "noun-contracts/governance/NounsDAOInterfaces.so
 import {NounsDescriptor} from "noun-contracts/NounsDescriptor.sol";
 import {FreeNounsTonken} from "./FreeNounsToken.sol";
 import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
-import {Alligator2} from "../src/Alligator2.sol";
+import {Alligator2, Rules} from "../src/Alligator2.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {DescriptorImageData} from "./DescriptorImageData.sol";
 
@@ -26,5 +26,30 @@ contract DeployAlligator2Script is Script {
         Alligator2 alligator = new Alligator2(INounsDAOV2(nounsDAO));
         address proxy = alligator.create(deployer);
         nounsToken.delegate(proxy);
+
+        alligator.subDelegate(
+            proxy,
+            0xC3FdAdbAe46798CD8762185A09C5b672A7aA36Bb,
+            Rules({
+                permissions: 0x07,
+                maxRedelegations: 0,
+                notValidBefore: 0,
+                notValidAfter: 0,
+                blocksBeforeVoteCloses: 0,
+                customRule: address(0)
+            })
+        );
+        alligator.subDelegate(
+            proxy,
+            0x1E79b045Dc29eAe9fdc69673c9DCd7C53E5E159D,
+            Rules({
+                permissions: 0x07,
+                maxRedelegations: 0,
+                notValidBefore: 0,
+                notValidAfter: 0,
+                blocksBeforeVoteCloses: 0,
+                customRule: address(0)
+            })
+        );
     }
 }
