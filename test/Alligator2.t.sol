@@ -39,7 +39,7 @@ contract Alligator2Test is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(root, Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
         alligator.castVote(authority, 1, 1);
 
@@ -62,14 +62,49 @@ contract Alligator2Test is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(root, Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
-        alligator.subDelegate(root, Utils.bob, rules);
+        alligator.subDelegate(Utils.bob, rules);
         vm.prank(Utils.bob);
-        alligator.subDelegate(root, Utils.carol, rules);
+        alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.carol);
         alligator.castVote(authority, 1, 1);
+    }
+
+    function testSharedSubDelegateTree() public {
+        address[] memory authority = new address[](4);
+        authority[0] = root;
+        authority[1] = Utils.alice;
+        authority[2] = Utils.bob;
+        authority[3] = Utils.carol;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligator.subDelegate(Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligator.subDelegate(Utils.carol, rules);
+
+        vm.prank(Utils.carol);
+        alligator.castVote(authority, 1, 1);
+        assertEq(nounsDAO.lastVoter(), root);
+
+        address proxy2 = alligator.create(Utils.bob);
+        address[] memory authority2 = new address[](2);
+        authority2[0] = proxy2;
+        authority2[1] = Utils.carol;
+        vm.prank(Utils.carol);
+        alligator.castVote(authority2, 1, 1);
+        assertEq(nounsDAO.lastVoter(), proxy2);
     }
 
     function testNestedUnDelegate() public {
@@ -88,15 +123,14 @@ contract Alligator2Test is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(root, Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
-        alligator.subDelegate(root, Utils.bob, rules);
+        alligator.subDelegate(Utils.bob, rules);
         vm.prank(Utils.bob);
-        alligator.subDelegate(root, Utils.carol, rules);
+        alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.alice);
         alligator.subDelegate(
-            root,
             Utils.bob,
             Rules({
                 permissions: 0,
@@ -145,11 +179,11 @@ contract Alligator2Test is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(root, Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
-        alligator.subDelegate(root, Utils.bob, rules);
+        alligator.subDelegate(Utils.bob, rules);
         vm.prank(Utils.bob);
-        alligator.subDelegate(root, Utils.carol, rules);
+        alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.carol);
         alligator.sign(authority, hash1);
@@ -174,15 +208,14 @@ contract Alligator2Test is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(root, Utils.alice, rules);
+        alligator.subDelegate(Utils.alice, rules);
         vm.prank(Utils.alice);
-        alligator.subDelegate(root, Utils.bob, rules);
+        alligator.subDelegate(Utils.bob, rules);
         vm.prank(Utils.bob);
-        alligator.subDelegate(root, Utils.carol, rules);
+        alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.alice);
         alligator.subDelegate(
-            root,
             Utils.bob,
             Rules({
                 permissions: 0,

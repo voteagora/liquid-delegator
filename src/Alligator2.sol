@@ -47,7 +47,8 @@ contract Alligator2 {
     INounsDAOV2 public immutable governor;
 
     mapping(address => address) owners;
-    mapping(address => mapping(address => mapping(address => Rules))) public subDelegations;
+    // From => To => Rules
+    mapping(address => mapping(address => Rules)) public subDelegations;
     mapping(address => mapping(bytes32 => bool)) internal validSignatures;
 
     uint8 internal constant PERMISSION_VOTE = 0x01;
@@ -60,7 +61,7 @@ contract Alligator2 {
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
     event ProxyDeployed(address indexed owner, address proxy);
-    event SubDelegation(address indexed proxy, address indexed from, address indexed to, Rules rules);
+    event SubDelegation(address indexed from, address indexed to, Rules rules);
     event VoteCast(
         address indexed proxy, address indexed voter, address[] authority, uint256 proposalId, uint8 support
     );
@@ -144,9 +145,9 @@ contract Alligator2 {
         return validSignatures[proxy][hash] ? IERC1271.isValidSignature.selector : bytes4(0);
     }
 
-    function subDelegate(address proxy, address to, Rules calldata rules) external {
-        subDelegations[proxy][msg.sender][to] = rules;
-        emit SubDelegation(proxy, msg.sender, to, rules);
+    function subDelegate(address to, Rules calldata rules) external {
+        subDelegations[msg.sender][to] = rules;
+        emit SubDelegation(msg.sender, to, rules);
     }
 
     function validate(
@@ -157,9 +158,9 @@ contract Alligator2 {
         uint8 support
     ) internal view {
         address proxy = authority[0];
-        address account = owners[proxy];
+        address from = owners[proxy];
 
-        if (account == sender) {
+        if (from == sender) {
             return;
         }
 
@@ -167,20 +168,20 @@ contract Alligator2 {
 
         for (uint256 i = 1; i < authority.length; i++) {
             address to = authority[i];
-            Rules memory rules = subDelegations[proxy][account][to];
+            Rules memory rules = subDelegations[from][to];
 
             if (rules.permissions & permissions != permissions) {
-                revert NotDelegated(proxy, account, to, permissions);
+                revert NotDelegated(proxy, from, to, permissions);
             }
             // TODO: check redelegations limit
             if (block.timestamp < rules.notValidBefore) {
-                revert NotValidYet(proxy, account, to, rules.notValidBefore);
+                revert NotValidYet(proxy, from, to, rules.notValidBefore);
             }
             if (rules.notValidAfter != 0 && block.timestamp > rules.notValidAfter) {
-                revert NotValidAnymore(proxy, account, to, rules.notValidAfter);
+                revert NotValidAnymore(proxy, from, to, rules.notValidAfter);
             }
             if (rules.blocksBeforeVoteCloses != 0 && proposal.endBlock - block.number > rules.blocksBeforeVoteCloses) {
-                revert TooEarly(proxy, account, to, rules.blocksBeforeVoteCloses);
+                revert TooEarly(proxy, from, to, rules.blocksBeforeVoteCloses);
             }
             if (rules.customRule != address(0)) {
                 bytes4 selector = IRule(rules.customRule).validate(address(governor), sender, proposalId, support);
@@ -189,13 +190,13 @@ contract Alligator2 {
                 }
             }
 
-            account = to;
+            from = to;
         }
 
-        if (account == sender) {
+        if (from == sender) {
             return;
         }
 
-        revert NotDelegated(proxy, account, sender, permissions);
+        revert NotDelegated(proxy, from, sender, permissions);
     }
 }

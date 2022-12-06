@@ -28,7 +28,6 @@ contract DeployAlligator2Script is Script {
         nounsToken.delegate(proxy);
 
         alligator.subDelegate(
-            proxy,
             0xC3FdAdbAe46798CD8762185A09C5b672A7aA36Bb,
             Rules({
                 permissions: 0x07,
@@ -40,7 +39,6 @@ contract DeployAlligator2Script is Script {
             })
         );
         alligator.subDelegate(
-            proxy,
             0x1E79b045Dc29eAe9fdc69673c9DCd7C53E5E159D,
             Rules({
                 permissions: 0x07,
