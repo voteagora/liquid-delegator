@@ -111,32 +111,42 @@ contract Alligator2 {
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
-    function castVote(address[] calldata authority, uint256 proposalId, uint8 support) public {
+    function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
         INounsDAOV2(authority[0]).castVote(proposalId, support);
         emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
     }
 
-    function castVoteBatched(address[][] calldata authorities, uint256 proposalId, uint8 support) public {
-        for (uint256 i = 0; i < authorities.length; i++) {
-            castVote(authorities[i], proposalId, support);
-        }
-    }
-
-    function castRefundableVoteBatched(address[][] calldata authorities, uint256 proposalId, uint8 support) external {
-        uint256 startGas = gasleft();
-        castVoteBatched(authorities, proposalId, support);
-        // TODO: Make sure the method call above actually resulted in new votes casted, otherwise
-        // the refund mechanism can be abused to drain the Alligator's funds
-        _refundGas(startGas);
-    }
-
     function castVoteWithReason(address[] calldata authority, uint256 proposalId, uint8 support, string calldata reason)
-        external
+        public
     {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
         INounsDAOV2(authority[0]).castVoteWithReason(proposalId, support, reason);
         emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
+    }
+
+    function castVotesWithReasonBatched(
+        address[][] calldata authorities,
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) public {
+        for (uint256 i = 0; i < authorities.length; i++) {
+            castVoteWithReason(authorities[i], proposalId, support, reason);
+        }
+    }
+
+    function castRefundableVotesWithReasonBatched(
+        address[][] calldata authorities,
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) external {
+        uint256 startGas = gasleft();
+        castVotesWithReasonBatched(authorities, proposalId, support, reason);
+        // TODO: Make sure the method call above actually resulted in new votes casted, otherwise
+        // the refund mechanism can be abused to drain the Alligator's funds
+        _refundGas(startGas);
     }
 
     function castVoteBySig(

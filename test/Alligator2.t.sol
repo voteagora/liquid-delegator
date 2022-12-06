@@ -140,7 +140,7 @@ contract Alligator2Test is Test {
         alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.carol);
-        alligator.castVoteBatched(authorities, 1, 1);
+        alligator.castVotesWithReasonBatched(authorities, 1, 1, "");
         assertEq(nounsDAO.hasVoted(root), true);
         assertEq(nounsDAO.hasVoted(proxy2), true);
         assertEq(nounsDAO.totalVotes(), 2);
@@ -313,7 +313,14 @@ contract NounsDAO is INounsDAOV2 {
 
     function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {}
 
-    function castVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {}
+    function castVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {
+        lastVoter = msg.sender;
+        lastProposalId = proposalId;
+        lastSupport = support;
+        totalVotes += 1;
+        hasVoted[msg.sender] = true;
+        emit VoteCast(msg.sender, proposalId, support, 0);
+    }
 
     function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external {}
 
