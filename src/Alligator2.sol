@@ -46,7 +46,6 @@ contract Proxy is IERC1271 {
 contract Alligator2 {
     INounsDAOV2 public immutable governor;
 
-    mapping(address => address) owners;
     // From => To => Rules
     mapping(address => mapping(address => Rules)) public subDelegations;
     mapping(address => mapping(bytes32 => bool)) internal validSignatures;
@@ -81,21 +80,38 @@ contract Alligator2 {
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     error BadSignature();
-    error NotDelegated(address proxy, address from, address to, uint8 requiredPermissions);
-    error NotValidYet(address proxy, address from, address to, uint32 willBeValidFrom);
-    error NotValidAnymore(address proxy, address from, address to, uint32 wasValidUntil);
-    error TooEarly(address proxy, address from, address to, uint32 blocksBeforeVoteCloses);
-    error InvalidCustomRule(address proxy, address customRule);
+    error NotDelegated(address from, address to, uint8 requiredPermissions);
+    error NotValidYet(address from, address to, uint32 willBeValidFrom);
+    error NotValidAnymore(address from, address to, uint32 wasValidUntil);
+    error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
+    error InvalidCustomRule(address from, address to, address customRule);
 
     constructor(INounsDAOV2 _governor) {
         governor = _governor;
     }
 
     function create(address owner) external returns (address endpoint) {
-        endpoint = address(new Proxy(address(governor)));
+        bytes32 salt = bytes32(uint256(uint160(owner)));
+        endpoint = address(new Proxy{salt: salt}(address(governor)));
         emit ProxyDeployed(owner, endpoint);
+    }
 
-        owners[endpoint] = owner;
+    function proxyAddress(address owner) public view returns (address endpoint) {
+        bytes32 salt = bytes32(uint256(uint160(owner)));
+        endpoint = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            bytes1(0xff),
+                            address(this),
+                            salt,
+                            keccak256(abi.encodePacked(type(Proxy).creationCode, abi.encode(address(governor))))
+                        )
+                    )
+                )
+            )
+        );
     }
 
     function propose(
@@ -106,23 +122,28 @@ contract Alligator2 {
         bytes[] calldata calldatas,
         string calldata description
     ) external returns (uint256 proposalId) {
+        address proxy = proxyAddress(authority[0]);
         // Create a proposal first so the custom rules can validate it
-        proposalId = INounsDAOV2(authority[0]).propose(targets, values, signatures, calldatas, description);
+        proposalId = INounsDAOV2(proxy).propose(targets, values, signatures, calldatas, description);
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
     function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
-        INounsDAOV2(authority[0]).castVote(proposalId, support);
-        emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
+
+        address proxy = proxyAddress(authority[0]);
+        INounsDAOV2(proxy).castVote(proposalId, support);
+        emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
 
     function castVoteWithReason(address[] calldata authority, uint256 proposalId, uint8 support, string calldata reason)
         public
     {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
-        INounsDAOV2(authority[0]).castVoteWithReason(proposalId, support, reason);
-        emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
+
+        address proxy = proxyAddress(authority[0]);
+        INounsDAOV2(proxy).castVoteWithReason(proposalId, support, reason);
+        emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
 
     function castVotesWithReasonBatched(
@@ -168,14 +189,18 @@ contract Alligator2 {
         }
 
         validate(signatory, authority, PERMISSION_VOTE, proposalId, support);
-        INounsDAOV2(authority[0]).castVote(proposalId, support);
-        emit VoteCast(authority[0], signatory, authority, proposalId, support);
+
+        address proxy = proxyAddress(authority[0]);
+        INounsDAOV2(proxy).castVote(proposalId, support);
+        emit VoteCast(proxy, signatory, authority, proposalId, support);
     }
 
     function sign(address[] calldata authority, bytes32 hash) external {
         validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
-        validSignatures[authority[0]][hash] = true;
-        emit Signed(authority[0], authority, hash);
+
+        address proxy = proxyAddress(authority[0]);
+        validSignatures[proxy][hash] = true;
+        emit Signed(proxy, authority, hash);
     }
 
     function isValidProxySignature(address proxy, bytes32 hash, bytes memory) public view returns (bytes4 magicValue) {
@@ -194,8 +219,7 @@ contract Alligator2 {
         uint256 proposalId,
         uint8 support
     ) internal view {
-        address proxy = authority[0];
-        address from = owners[proxy];
+        address from = authority[0];
 
         if (from == sender) {
             return;
@@ -208,22 +232,22 @@ contract Alligator2 {
             Rules memory rules = subDelegations[from][to];
 
             if (rules.permissions & permissions != permissions) {
-                revert NotDelegated(proxy, from, to, permissions);
+                revert NotDelegated(from, to, permissions);
             }
             // TODO: check redelegations limit
             if (block.timestamp < rules.notValidBefore) {
-                revert NotValidYet(proxy, from, to, rules.notValidBefore);
+                revert NotValidYet(from, to, rules.notValidBefore);
             }
             if (rules.notValidAfter != 0 && block.timestamp > rules.notValidAfter) {
-                revert NotValidAnymore(proxy, from, to, rules.notValidAfter);
+                revert NotValidAnymore(from, to, rules.notValidAfter);
             }
             if (rules.blocksBeforeVoteCloses != 0 && proposal.endBlock - block.number > rules.blocksBeforeVoteCloses) {
-                revert TooEarly(proxy, from, to, rules.blocksBeforeVoteCloses);
+                revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
             }
             if (rules.customRule != address(0)) {
                 bytes4 selector = IRule(rules.customRule).validate(address(governor), sender, proposalId, support);
                 if (selector != IRule.validate.selector) {
-                    revert InvalidCustomRule(proxy, rules.customRule);
+                    revert InvalidCustomRule(from, to, rules.customRule);
                 }
             }
 
@@ -234,7 +258,7 @@ contract Alligator2 {
             return;
         }
 
-        revert NotDelegated(proxy, from, sender, permissions);
+        revert NotDelegated(from, sender, permissions);
     }
 
     function _refundGas(uint256 startGas) internal {

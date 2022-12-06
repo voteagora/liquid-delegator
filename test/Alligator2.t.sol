@@ -19,15 +19,20 @@ contract Alligator2Test is Test {
         root = alligator.create(address(this));
     }
 
+    function testProxyAddressMatches() public {
+        address proxy = alligator.create(Utils.alice);
+        assertEq(alligator.proxyAddress(Utils.alice), proxy);
+    }
+
     function testVote() public {
         address[] memory authority = new address[](1);
-        authority[0] = root;
+        authority[0] = address(this);
         alligator.castVote(authority, 1, 1);
     }
 
     function testSubDelegate() public {
         address[] memory authority = new address[](2);
-        authority[0] = root;
+        authority[0] = address(this);
         authority[1] = Utils.alice;
 
         Rules memory rules = Rules({
@@ -48,7 +53,7 @@ contract Alligator2Test is Test {
 
     function testNestedSubDelegate() public {
         address[] memory authority = new address[](4);
-        authority[0] = root;
+        authority[0] = address(this);
         authority[1] = Utils.alice;
         authority[2] = Utils.bob;
         authority[3] = Utils.carol;
@@ -74,14 +79,14 @@ contract Alligator2Test is Test {
 
     function testSharedSubDelegateTree() public {
         address[] memory authority = new address[](4);
-        authority[0] = root;
+        authority[0] = address(this);
         authority[1] = Utils.alice;
         authority[2] = Utils.bob;
         authority[3] = Utils.carol;
 
         address proxy2 = alligator.create(Utils.bob);
         address[] memory authority2 = new address[](2);
-        authority2[0] = proxy2;
+        authority2[0] = Utils.bob;
         authority2[1] = Utils.carol;
 
         Rules memory rules = Rules({
@@ -110,14 +115,14 @@ contract Alligator2Test is Test {
 
     function testCastVoteBatched() public {
         address[] memory authority1 = new address[](4);
-        authority1[0] = root;
+        authority1[0] = address(this);
         authority1[1] = Utils.alice;
         authority1[2] = Utils.bob;
         authority1[3] = Utils.carol;
 
-        address proxy2 = alligator.create(Utils.bob);
+        alligator.create(Utils.bob);
         address[] memory authority2 = new address[](2);
-        authority2[0] = proxy2;
+        authority2[0] = Utils.bob;
         authority2[1] = Utils.carol;
 
         address[][] memory authorities = new address[][](2);
@@ -141,14 +146,14 @@ contract Alligator2Test is Test {
 
         vm.prank(Utils.carol);
         alligator.castVotesWithReasonBatched(authorities, 1, 1, "");
-        assertEq(nounsDAO.hasVoted(root), true);
-        assertEq(nounsDAO.hasVoted(proxy2), true);
+        assertEq(nounsDAO.hasVoted(alligator.proxyAddress(address(this))), true);
+        assertEq(nounsDAO.hasVoted(alligator.proxyAddress(Utils.bob)), true);
         assertEq(nounsDAO.totalVotes(), 2);
     }
 
     function testNestedUnDelegate() public {
         address[] memory authority = new address[](4);
-        authority[0] = root;
+        authority[0] = address(this);
         authority[1] = Utils.alice;
         authority[2] = Utils.bob;
         authority[3] = Utils.carol;
@@ -193,7 +198,7 @@ contract Alligator2Test is Test {
         assertEq(IERC1271(root).isValidSignature(hash2, ""), bytes4(0));
 
         address[] memory authority = new address[](1);
-        authority[0] = root;
+        authority[0] = address(this);
         alligator.sign(authority, hash1);
 
         assertEq(IERC1271(root).isValidSignature(hash1, ""), IERC1271.isValidSignature.selector);
@@ -204,7 +209,7 @@ contract Alligator2Test is Test {
         bytes32 hash1 = keccak256(abi.encodePacked("pass"));
 
         address[] memory authority = new address[](4);
-        authority[0] = root;
+        authority[0] = address(this);
         authority[1] = Utils.alice;
         authority[2] = Utils.bob;
         authority[3] = Utils.carol;
@@ -233,7 +238,7 @@ contract Alligator2Test is Test {
         bytes32 hash1 = keccak256(abi.encodePacked("pass"));
 
         address[] memory authority = new address[](4);
-        authority[0] = root;
+        authority[0] = address(this);
         authority[1] = Utils.alice;
         authority[2] = Utils.bob;
         authority[3] = Utils.carol;
@@ -313,7 +318,7 @@ contract NounsDAO is INounsDAOV2 {
 
     function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {}
 
-    function castVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {
+    function castVoteWithReason(uint256 proposalId, uint8 support, string calldata) external {
         lastVoter = msg.sender;
         lastProposalId = proposalId;
         lastSupport = support;
