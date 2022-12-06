@@ -79,6 +79,11 @@ contract Alligator2Test is Test {
         authority[2] = Utils.bob;
         authority[3] = Utils.carol;
 
+        address proxy2 = alligator.create(Utils.bob);
+        address[] memory authority2 = new address[](2);
+        authority2[0] = proxy2;
+        authority2[1] = Utils.carol;
+
         Rules memory rules = Rules({
             permissions: 0x01,
             maxRedelegations: 1,
@@ -98,13 +103,47 @@ contract Alligator2Test is Test {
         alligator.castVote(authority, 1, 1);
         assertEq(nounsDAO.lastVoter(), root);
 
+        vm.prank(Utils.carol);
+        alligator.castVote(authority2, 1, 1);
+        assertEq(nounsDAO.lastVoter(), proxy2);
+    }
+
+    function testCastVoteBatched() public {
+        address[] memory authority1 = new address[](4);
+        authority1[0] = root;
+        authority1[1] = Utils.alice;
+        authority1[2] = Utils.bob;
+        authority1[3] = Utils.carol;
+
         address proxy2 = alligator.create(Utils.bob);
         address[] memory authority2 = new address[](2);
         authority2[0] = proxy2;
         authority2[1] = Utils.carol;
+
+        address[][] memory authorities = new address[][](2);
+        authorities[0] = authority1;
+        authorities[1] = authority2;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligator.subDelegate(Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligator.subDelegate(Utils.carol, rules);
+
         vm.prank(Utils.carol);
-        alligator.castVote(authority2, 1, 1);
-        assertEq(nounsDAO.lastVoter(), proxy2);
+        alligator.castVoteBatched(authorities, 1, 1);
+        assertEq(nounsDAO.hasVoted(root), true);
+        assertEq(nounsDAO.hasVoted(proxy2), true);
+        assertEq(nounsDAO.totalVotes(), 2);
     }
 
     function testNestedUnDelegate() public {
@@ -240,6 +279,8 @@ contract NounsDAO is INounsDAOV2 {
     address public lastVoter;
     uint256 public lastProposalId;
     uint256 public lastSupport;
+    uint256 public totalVotes;
+    mapping(address => bool) public hasVoted;
 
     function quorumVotes() external view returns (uint256) {}
 
@@ -259,6 +300,8 @@ contract NounsDAO is INounsDAOV2 {
         lastVoter = msg.sender;
         lastProposalId = proposalId;
         lastSupport = support;
+        totalVotes += 1;
+        hasVoted[msg.sender] = true;
         emit VoteCast(msg.sender, proposalId, support, 0);
     }
 

@@ -98,10 +98,16 @@ contract Alligator2 {
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
-    function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
+    function castVote(address[] calldata authority, uint256 proposalId, uint8 support) public {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
         INounsDAOV2(authority[0]).castVote(proposalId, support);
         emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
+    }
+
+    function castVoteBatched(address[][] calldata authorities, uint256 proposalId, uint8 support) external {
+        for (uint256 i = 0; i < authorities.length; i++) {
+            castVote(authorities[i], proposalId, support);
+        }
     }
 
     function castVoteWithReason(address[] calldata authority, uint256 proposalId, uint8 support, string calldata reason)
