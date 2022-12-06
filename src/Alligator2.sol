@@ -60,12 +60,25 @@ contract Alligator2 {
 
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
+    /// @notice The maximum priority fee used to cap gas refunds in `castRefundableVote`
+    uint256 public constant MAX_REFUND_PRIORITY_FEE = 2 gwei;
+
+    /// @notice The vote refund gas overhead, including 7K for ETH transfer and 29K for general transaction overhead
+    uint256 public constant REFUND_BASE_GAS = 36000;
+
+    /// @notice The maximum gas units the DAO will refund voters on; supports about 9,190 characters
+    uint256 public constant MAX_REFUND_GAS_USED = 200_000;
+
+    /// @notice The maximum basefee the DAO will refund voters on
+    uint256 public constant MAX_REFUND_BASE_FEE = 200 gwei;
+
     event ProxyDeployed(address indexed owner, address proxy);
     event SubDelegation(address indexed from, address indexed to, Rules rules);
     event VoteCast(
         address indexed proxy, address indexed voter, address[] authority, uint256 proposalId, uint8 support
     );
     event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
+    event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     error BadSignature();
     error NotDelegated(address proxy, address from, address to, uint8 requiredPermissions);
@@ -104,10 +117,18 @@ contract Alligator2 {
         emit VoteCast(authority[0], msg.sender, authority, proposalId, support);
     }
 
-    function castVoteBatched(address[][] calldata authorities, uint256 proposalId, uint8 support) external {
+    function castVoteBatched(address[][] calldata authorities, uint256 proposalId, uint8 support) public {
         for (uint256 i = 0; i < authorities.length; i++) {
             castVote(authorities[i], proposalId, support);
         }
+    }
+
+    function castRefundableVoteBatched(address[][] calldata authorities, uint256 proposalId, uint8 support) external {
+        uint256 startGas = gasleft();
+        castVoteBatched(authorities, proposalId, support);
+        // TODO: Make sure the method call above actually resulted in new votes casted, otherwise
+        // the refund mechanism can be abused to drain the Alligator's funds
+        _refundGas(startGas);
     }
 
     function castVoteWithReason(address[] calldata authority, uint256 proposalId, uint8 support, string calldata reason)
@@ -204,5 +225,24 @@ contract Alligator2 {
         }
 
         revert NotDelegated(proxy, from, sender, permissions);
+    }
+
+    function _refundGas(uint256 startGas) internal {
+        unchecked {
+            uint256 balance = address(this).balance;
+            if (balance == 0) {
+                return;
+            }
+            uint256 basefee = min(block.basefee, MAX_REFUND_BASE_FEE);
+            uint256 gasPrice = min(tx.gasprice, basefee + MAX_REFUND_PRIORITY_FEE);
+            uint256 gasUsed = min(startGas - gasleft() + REFUND_BASE_GAS, MAX_REFUND_GAS_USED);
+            uint256 refundAmount = min(gasPrice * gasUsed, balance);
+            (bool refundSent,) = msg.sender.call{value: refundAmount}("");
+            emit RefundableVote(msg.sender, refundAmount, refundSent);
+        }
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 }
