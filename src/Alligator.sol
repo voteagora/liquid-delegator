@@ -4,37 +4,7 @@ pragma solidity ^0.8.13;
 import {IGovernorBravo} from "./interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
 import {IRule} from "./interfaces/IRule.sol";
-
-// Batch vote from different alligators
-// How will the frontend know which alligators are available?
-// How Prop House works: signatures EIP-1271
-
-struct Delegation {
-    address to;
-    uint256 until;
-    uint256 redelegations;
-}
-
-// Rules
-// - Sub-delegate up to X times
-// - Sub-delegate for X amount of time
-// - Allow voting only in the last X hours (backup)
-// - Allow voting on prop house (signatures)
-// - Props that don't upgrade the code
-// - Props that only distribute eth up to X
-// - Custom rules (call a contract)
-// - Can receive refunds
-
-// - Pull all proposal targets
-
-enum Clearance {
-    None,
-    Propose,
-    Vote,
-    Sign,
-    Subdelegate,
-    Refund
-}
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 struct Rules {
     uint8 permissions;
@@ -45,10 +15,40 @@ struct Rules {
     address customRule;
 }
 
-contract AlligatorWithRules {
-    address public immutable owner;
+contract Proxy is IERC1271 {
+    address internal immutable owner;
+    address internal immutable governor;
+
+    constructor(address _governor) {
+        owner = msg.sender;
+        governor = _governor;
+    }
+
+    function isValidSignature(bytes32 hash, bytes memory signature) public view override returns (bytes4 magicValue) {
+        return Alligator(owner).isValidProxySignature(address(this), hash, signature);
+    }
+
+    fallback() external payable {
+        require(msg.sender == owner);
+        address addr = governor;
+
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := call(gas(), addr, callvalue(), 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+
+contract Alligator {
     INounsDAOV2 public immutable governor;
+
+    // From => To => Rules
     mapping(address => mapping(address => Rules)) public subDelegations;
+    mapping(address => mapping(bytes32 => bool)) internal validSignatures;
 
     uint8 internal constant PERMISSION_VOTE = 0x01;
     uint8 internal constant PERMISSION_SIGN = 0x02;
@@ -59,19 +59,59 @@ contract AlligatorWithRules {
 
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
+    /// @notice The maximum priority fee used to cap gas refunds in `castRefundableVote`
+    uint256 public constant MAX_REFUND_PRIORITY_FEE = 2 gwei;
+
+    /// @notice The vote refund gas overhead, including 7K for ETH transfer and 29K for general transaction overhead
+    uint256 public constant REFUND_BASE_GAS = 36000;
+
+    /// @notice The maximum gas units the DAO will refund voters on; supports about 9,190 characters
+    uint256 public constant MAX_REFUND_GAS_USED = 200_000;
+
+    /// @notice The maximum basefee the DAO will refund voters on
+    uint256 public constant MAX_REFUND_BASE_FEE = 200 gwei;
+
+    event ProxyDeployed(address indexed owner, address proxy);
     event SubDelegation(address indexed from, address indexed to, Rules rules);
-    event VoteCast(address indexed voter, address[] authority, uint256 proposalId, uint8 support);
+    event VoteCast(
+        address indexed proxy, address indexed voter, address[] authority, uint256 proposalId, uint8 support
+    );
+    event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
+    event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     error BadSignature();
     error NotDelegated(address from, address to, uint8 requiredPermissions);
     error NotValidYet(address from, address to, uint32 willBeValidFrom);
     error NotValidAnymore(address from, address to, uint32 wasValidUntil);
     error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
-    error InvalidCustomRule(address customRule);
+    error InvalidCustomRule(address from, address to, address customRule);
 
-    constructor(address _owner, INounsDAOV2 _governor) {
-        owner = _owner;
+    constructor(INounsDAOV2 _governor) {
         governor = _governor;
+    }
+
+    function create(address owner) external returns (address endpoint) {
+        bytes32 salt = bytes32(uint256(uint160(owner)));
+        endpoint = address(new Proxy{salt: salt}(address(governor)));
+        emit ProxyDeployed(owner, endpoint);
+    }
+
+    function proxyAddress(address owner) public view returns (address endpoint) {
+        bytes32 salt = bytes32(uint256(uint160(owner)));
+        endpoint = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            bytes1(0xff),
+                            address(this),
+                            salt,
+                            keccak256(abi.encodePacked(type(Proxy).creationCode, abi.encode(address(governor))))
+                        )
+                    )
+                )
+            )
+        );
     }
 
     function propose(
@@ -82,23 +122,52 @@ contract AlligatorWithRules {
         bytes[] calldata calldatas,
         string calldata description
     ) external returns (uint256 proposalId) {
+        address proxy = proxyAddress(authority[0]);
         // Create a proposal first so the custom rules can validate it
-        proposalId = governor.propose(targets, values, signatures, calldatas, description);
+        proposalId = INounsDAOV2(proxy).propose(targets, values, signatures, calldatas, description);
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
     function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
-        governor.castVote(proposalId, support);
-        emit VoteCast(msg.sender, authority, proposalId, support);
+
+        address proxy = proxyAddress(authority[0]);
+        INounsDAOV2(proxy).castVote(proposalId, support);
+        emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
 
     function castVoteWithReason(address[] calldata authority, uint256 proposalId, uint8 support, string calldata reason)
-        external
+        public
     {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
-        governor.castVoteWithReason(proposalId, support, reason);
-        emit VoteCast(msg.sender, authority, proposalId, support);
+
+        address proxy = proxyAddress(authority[0]);
+        INounsDAOV2(proxy).castVoteWithReason(proposalId, support, reason);
+        emit VoteCast(proxy, msg.sender, authority, proposalId, support);
+    }
+
+    function castVotesWithReasonBatched(
+        address[][] calldata authorities,
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) public {
+        for (uint256 i = 0; i < authorities.length; i++) {
+            castVoteWithReason(authorities[i], proposalId, support, reason);
+        }
+    }
+
+    function castRefundableVotesWithReasonBatched(
+        address[][] calldata authorities,
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) external {
+        uint256 startGas = gasleft();
+        castVotesWithReasonBatched(authorities, proposalId, support, reason);
+        // TODO: Make sure the method call above actually resulted in new votes casted, otherwise
+        // the refund mechanism can be abused to drain the Alligator's funds
+        _refundGas(startGas);
     }
 
     function castVoteBySig(
@@ -120,8 +189,22 @@ contract AlligatorWithRules {
         }
 
         validate(signatory, authority, PERMISSION_VOTE, proposalId, support);
-        governor.castVote(proposalId, support);
-        emit VoteCast(signatory, authority, proposalId, support);
+
+        address proxy = proxyAddress(authority[0]);
+        INounsDAOV2(proxy).castVote(proposalId, support);
+        emit VoteCast(proxy, signatory, authority, proposalId, support);
+    }
+
+    function sign(address[] calldata authority, bytes32 hash) external {
+        validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
+
+        address proxy = proxyAddress(authority[0]);
+        validSignatures[proxy][hash] = true;
+        emit Signed(proxy, authority, hash);
+    }
+
+    function isValidProxySignature(address proxy, bytes32 hash, bytes memory) public view returns (bytes4 magicValue) {
+        return validSignatures[proxy][hash] ? IERC1271.isValidSignature.selector : bytes4(0);
     }
 
     function subDelegate(address to, Rules calldata rules) external {
@@ -136,61 +219,64 @@ contract AlligatorWithRules {
         uint256 proposalId,
         uint8 support
     ) internal view {
-        address account = owner;
+        address from = authority[0];
 
-        if (account == sender) {
+        if (from == sender) {
             return;
         }
 
         INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
 
-        for (uint256 i = 0; i < authority.length; i++) {
+        for (uint256 i = 1; i < authority.length; i++) {
             address to = authority[i];
-            Rules memory rules = subDelegations[account][to];
+            Rules memory rules = subDelegations[from][to];
 
             if (rules.permissions & permissions != permissions) {
-                revert NotDelegated(account, to, permissions);
+                revert NotDelegated(from, to, permissions);
             }
             // TODO: check redelegations limit
             if (block.timestamp < rules.notValidBefore) {
-                revert NotValidYet(account, to, rules.notValidBefore);
+                revert NotValidYet(from, to, rules.notValidBefore);
             }
             if (rules.notValidAfter != 0 && block.timestamp > rules.notValidAfter) {
-                revert NotValidAnymore(account, to, rules.notValidAfter);
+                revert NotValidAnymore(from, to, rules.notValidAfter);
             }
             if (rules.blocksBeforeVoteCloses != 0 && proposal.endBlock - block.number > rules.blocksBeforeVoteCloses) {
-                revert TooEarly(account, to, rules.blocksBeforeVoteCloses);
+                revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
             }
             if (rules.customRule != address(0)) {
                 bytes4 selector = IRule(rules.customRule).validate(address(governor), sender, proposalId, support);
                 if (selector != IRule.validate.selector) {
-                    revert InvalidCustomRule(rules.customRule);
+                    revert InvalidCustomRule(from, to, rules.customRule);
                 }
             }
 
-            account = to;
+            from = to;
         }
 
-        if (account == sender) {
+        if (from == sender) {
             return;
         }
 
-        revert NotDelegated(account, sender, permissions);
-    }
-}
-
-contract AlligatorFactory {
-    INounsDAOV2 public immutable governor;
-
-    event AlligatorDeployed(address indexed owner, address alligator);
-
-    constructor(INounsDAOV2 _governor) {
-        governor = _governor;
+        revert NotDelegated(from, sender, permissions);
     }
 
-    function create(address owner) external returns (AlligatorWithRules alligator) {
-        bytes32 salt = bytes32(uint256(uint160(owner)));
-        alligator = new AlligatorWithRules{salt: salt}(owner, governor);
-        emit AlligatorDeployed(owner, address(alligator));
+    function _refundGas(uint256 startGas) internal {
+        unchecked {
+            uint256 balance = address(this).balance;
+            if (balance == 0) {
+                return;
+            }
+            uint256 basefee = min(block.basefee, MAX_REFUND_BASE_FEE);
+            uint256 gasPrice = min(tx.gasprice, basefee + MAX_REFUND_PRIORITY_FEE);
+            uint256 gasUsed = min(startGas - gasleft() + REFUND_BASE_GAS, MAX_REFUND_GAS_USED);
+            uint256 refundAmount = min(gasPrice * gasUsed, balance);
+            (bool refundSent,) = msg.sender.call{value: refundAmount}("");
+            emit RefundableVote(msg.sender, refundAmount, refundSent);
+        }
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 }

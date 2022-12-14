@@ -10,7 +10,6 @@ import {NounsDAOStorageV2} from "noun-contracts/governance/NounsDAOInterfaces.so
 import {NounsDescriptor} from "noun-contracts/NounsDescriptor.sol";
 import {FreeNounsTonken} from "./FreeNounsToken.sol";
 import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
-import {AlligatorFactory, AlligatorWithRules} from "../src/Alligator.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {DescriptorImageData} from "./DescriptorImageData.sol";
 
@@ -69,8 +68,6 @@ contract DeployScript is Script {
         nounsToken.mint(deployer, 2);
         nounsToken.mint(deployer, 3);
 
-        AlligatorFactory factory = new AlligatorFactory(INounsDAOV2(address(proxy)));
-        AlligatorWithRules alligator = factory.create(deployer);
-        nounsToken.delegate(address(alligator));
+        console.log("NounsDAOProxyV2", address(proxy));
     }
 }
