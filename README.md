@@ -27,14 +27,14 @@ There's a few TODO items in the code and the tests are not comprehensive. But th
 
 Alligator is designed to work without holding user's tokens.
 
-1. Alligator deploys a proxy contract for every user who wants to use the system. The proxy's address is deterministic and the proxy can be deployed by anyone. The proxy only allows commands from Alligator itself.
-2. The user who wants to delegate their voting power via Alligator's system must first delegate (not transfer!) the original ERC20s to the corresponding Alligator's proxy.
+1. Alligator deploys a proxy contract for every token holder who wants to use the system. The proxy's address is deterministic and the proxy can be deployed by anyone. The proxy only allows commands from Alligator itself.
+2. The user who wants to delegate their voting power via Alligator's system must first delegate (not transfer!) the original tokens (ERC20s or ERC721s) to the corresponding Alligator's proxy.
 3. The user can now configure sub-delegations. They can sub-delegate to any number of other users and can limit the sub-delegation to a set of specific rules.
 4. The user who is delegated to can now vote by calling the corresponding function on Alligator. The user must include one or more delegation chains that they want to exercise.
 5. The rules engine checks if the subdelegations are allowed, and forwards the request to vote to a proxy. The proxy casts a vote on Governor contract.
 
 ```
-                        [2] ERC20
+                        [2] VotingToken
       ┌ ─ ─ ─ ─ ─ ─ ─ ─ .delegateTo ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
                         (0xAAA's proxy)                  │
       │
