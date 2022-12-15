@@ -184,7 +184,7 @@ contract Alligator {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
 
-        if (signatory != address(0)) {
+        if (signatory == address(0)) {
             revert BadSignature();
         }
 
@@ -233,7 +233,7 @@ contract Alligator {
             address to = authority[i];
             Rules memory rules = subDelegations[from][to];
 
-            if (rules.permissions & permissions != permissions) {
+            if ((rules.permissions & permissions) != permissions) {
                 revert NotDelegated(from, to, permissions);
             }
             // TODO: check redelegations limit
