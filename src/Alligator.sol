@@ -209,6 +209,7 @@ contract Alligator {
     }
 
     function subDelegate(address to, Rules calldata rules) external {
+        // TODO: Batched version
         subDelegations[msg.sender][to] = rules;
         emit SubDelegation(msg.sender, to, rules);
     }

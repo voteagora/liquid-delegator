@@ -92,6 +92,20 @@ From the Governor's perspective, it looks like users `0xAAA's proxy` and `0xFFF'
 ╚══════════╝              └──────────────────┘         └──────────────────┘
 ```
 
+### Other design considerations
+
+1. Should the rules be scoped to proxy or delegator? The initial prototype of Alligator used per-proxy rules, but we don't think in real life users want different sets of rules for different lots, and it's not how the original Governor works. E.g. if `0xAAA` subdelegates to `0xBBB`, we assume A trusts B (within the set rules) so if `0xCCC` delegates to `0xAAA`, `0xBBB` should be able to use these votes. It's also less on-chain storage and better scaling.
+
+2. Should we support exclusive delegation? I.e. if `0xAAA` delegates to `0xBBB`, should `0xAAA` still be able to use that voting power? Supporting this would increase the complexity and raise many questions (e.g. if `0xCCC` delegates to `0xAAA`, can `0xAAA` still vote?). It could also easily be tricked by `0xAAA` via un-delegating, voting, and re-delegating back to `0xBBB`. So unless we introduce snapshots, adding exclusive delegation support doesn't give us much.
+
+3. Is it possible to subdelegate a fraction of the tokens? According to our research, it's not possible unless we either hold users' tokens or change how the base token voting snapshots work. Alligator could theoretically used with something like [Franchiser](https://github.com/NoahZinsmeister/franchiser) (but we haven't tested this).
+
+4. We are trying to make the contract as ergonomic as possible for the end users. Any friction will result in less actions taken, and we want more government participation. So ideally it should take the minimum number of transactions to set things up and use. For the setup, we need proxy deployment, delegate the original tokens and configure the rules. The proxy deployment is permissionless and can be done beforehand for big users. We can't get around the original token delegation transaction. Configuring the rules should be batched too. For voting, we want to have batched versions of castVote, offering a user to use different chains of authority to vote on a single proposal. We also offer a refund, if funds for it are available.
+
+5. To limit EIP-1271 signatures to Prop House only, we are planning to do EIP-712 hashing on the contract side and check if the domain corresponds to the Prop House.
+
+6. Should the base implementation of Alligator be upgradeable? Not sure, it adds marginal gas cost and security considerations. If we work on extending the feature set of Alligator, we can ask the users who want the extra features to re-delegate to Alligator v2, v3, etc.
+
 ## Running tests:
 
 1. Install [foundry](https://book.getfoundry.sh/getting-started/installation)
@@ -102,3 +116,7 @@ From the Governor's perspective, it looks like users `0xAAA's proxy` and `0xFFF'
 1. Fund `0x77777101E31b4F3ECafF209704E947855eFbd014` with SepoliaETH
 2. Get Etherscan API key
 3. `forge script script/DeployAlligator.s.sol -vvvv --fork-url https://rpc-sepolia.rockx.com --chain-id 11155111 --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY`
+
+## Attack surface
+
+Alligator does not hold user's tokens, so it's not possible to steal the tokens using a potential bug in the contract. However, it controls voting power which can be abused to vote on malicious proposals (e.g. transfer all the treasury tokens to evil.eth).
