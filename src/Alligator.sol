@@ -196,6 +196,7 @@ contract Alligator {
     }
 
     function sign(address[] calldata authority, bytes32 hash) external {
+        // TODO: Prop House EIP-712 support
         validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
 
         address proxy = proxyAddress(authority[0]);
