@@ -276,6 +276,47 @@ contract AlligatorTest is Test {
         alligator.sign(authority, hash1);
         assertEq(IERC1271(root).isValidSignature(hash1, ""), bytes4(0));
     }
+
+    function testOffchainSignatures() public {
+        uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
+        address signer = vm.addr(privateKey);
+        bytes32 hash1 = keccak256(abi.encodePacked("data"));
+        bytes32 hash2 = keccak256(abi.encodePacked("fake"));
+
+        address[] memory authority = new address[](5);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+        authority[2] = Utils.bob;
+        authority[3] = Utils.carol;
+        authority[4] = signer;
+
+        Rules memory rules = Rules({
+            permissions: 0x02,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligator.subDelegate(Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligator.subDelegate(Utils.carol, rules);
+        vm.prank(Utils.carol);
+        alligator.subDelegate(signer, rules);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash1);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        bytes memory data = abi.encode(authority, signature);
+
+        assertEq(IERC1271(root).isValidSignature(hash1, data), IERC1271.isValidSignature.selector);
+
+        // Different hash means erecover returns a different user
+        vm.expectRevert();
+        IERC1271(root).isValidSignature(hash2, data);
+    }
 }
 
 contract NounsDAO is INounsDAOV2 {

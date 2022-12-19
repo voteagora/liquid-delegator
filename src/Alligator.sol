@@ -5,6 +5,7 @@ import {IGovernorBravo} from "./interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
 import {IRule} from "./interfaces/IRule.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 struct Rules {
     uint8 permissions;
@@ -15,6 +16,7 @@ struct Rules {
     address customRule;
 }
 
+// Maybe implement proxy EIP so Etherscan knows it's a proxy
 contract Proxy is IERC1271 {
     address internal immutable owner;
     address internal immutable governor;
@@ -204,7 +206,18 @@ contract Alligator {
         emit Signed(proxy, authority, hash);
     }
 
-    function isValidProxySignature(address proxy, bytes32 hash, bytes memory) public view returns (bytes4 magicValue) {
+    function isValidProxySignature(address proxy, bytes32 hash, bytes calldata data)
+        public
+        view
+        returns (bytes4 magicValue)
+    {
+        if (data.length > 0) {
+            // TODO: can we trust the signature as is?
+            (address[] memory authority, bytes memory signature) = abi.decode(data, (address[], bytes));
+            address signer = ECDSA.recover(hash, signature);
+            validate(signer, authority, PERMISSION_SIGN, 0, 0xFE);
+            return IERC1271.isValidSignature.selector;
+        }
         return validSignatures[proxy][hash] ? IERC1271.isValidSignature.selector : bytes4(0);
     }
 
@@ -214,13 +227,10 @@ contract Alligator {
         emit SubDelegation(msg.sender, to, rules);
     }
 
-    function validate(
-        address sender,
-        address[] calldata authority,
-        uint8 permissions,
-        uint256 proposalId,
-        uint8 support
-    ) internal view {
+    function validate(address sender, address[] memory authority, uint8 permissions, uint256 proposalId, uint8 support)
+        internal
+        view
+    {
         address from = authority[0];
 
         if (from == sender) {
