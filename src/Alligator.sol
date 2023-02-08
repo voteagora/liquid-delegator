@@ -16,7 +16,6 @@ struct Rules {
     address customRule;
 }
 
-// Maybe implement proxy EIP so Etherscan knows it's a proxy
 contract Proxy is IERC1271 {
     address internal immutable owner;
     address internal immutable governor;
@@ -42,6 +41,10 @@ contract Proxy is IERC1271 {
             case 0 { revert(0, returndatasize()) }
             default { return(0, returndatasize()) }
         }
+    }
+
+    receive() external payable {
+        revert();
     }
 }
 
