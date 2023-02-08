@@ -37,7 +37,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x01,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,
@@ -60,7 +60,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x01,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,
@@ -91,7 +91,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x01,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,
@@ -131,7 +131,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x01,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,
@@ -160,7 +160,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x01,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,
@@ -191,6 +191,44 @@ contract AlligatorTest is Test {
         alligator.castVote(authority, 1, 1);
     }
 
+    function testMaxRedelegations() public {
+        address[] memory authority = new address[](4);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+        authority[2] = Utils.bob;
+        authority[3] = Utils.carol;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules);
+        vm.prank(Utils.alice);
+
+        rules.maxRedelegations = 255;
+
+        alligator.subDelegate(Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligator.subDelegate(Utils.carol, rules);
+
+        vm.prank(Utils.carol);
+        vm.expectRevert();
+        alligator.castVote(authority, 1, 1);
+
+        address[] memory authority2 = new address[](3);
+        authority2[0] = address(this);
+        authority2[1] = Utils.alice;
+        authority2[2] = Utils.bob;
+
+        vm.prank(Utils.bob);
+        alligator.castVote(authority2, 1, 1);
+    }
+
     function testSupportsSigning() public {
         bytes32 hash1 = keccak256(abi.encodePacked("pass"));
         bytes32 hash2 = keccak256(abi.encodePacked("fail"));
@@ -216,7 +254,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x02,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,
@@ -245,7 +283,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x02,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,
@@ -292,7 +330,7 @@ contract AlligatorTest is Test {
 
         Rules memory rules = Rules({
             permissions: 0x02,
-            maxRedelegations: 1,
+            maxRedelegations: 255,
             notValidBefore: 0,
             notValidAfter: 0,
             blocksBeforeVoteCloses: 0,

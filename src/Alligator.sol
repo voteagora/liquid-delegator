@@ -83,6 +83,7 @@ contract Alligator {
 
     error BadSignature();
     error NotDelegated(address from, address to, uint8 requiredPermissions);
+    error TooManyRedelegations(address from, address to);
     error NotValidYet(address from, address to, uint32 willBeValidFrom);
     error NotValidAnymore(address from, address to, uint32 wasValidUntil);
     error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
@@ -246,7 +247,9 @@ contract Alligator {
             if ((rules.permissions & permissions) != permissions) {
                 revert NotDelegated(from, to, permissions);
             }
-            // TODO: check redelegations limit
+            if (rules.maxRedelegations + i + 1 < authority.length) {
+                revert TooManyRedelegations(from, to);
+            }
             if (block.timestamp < rules.notValidBefore) {
                 revert NotValidYet(from, to, rules.notValidBefore);
             }
