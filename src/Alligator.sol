@@ -26,7 +26,7 @@ contract Proxy is IERC1271 {
     }
 
     function isValidSignature(bytes32 hash, bytes memory signature) public view override returns (bytes4 magicValue) {
-        return Alligator(owner).isValidProxySignature(address(this), hash, signature);
+        return Alligator(payable(owner)).isValidProxySignature(address(this), hash, signature);
     }
 
     fallback() external payable {
@@ -297,4 +297,7 @@ contract Alligator {
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
+
+    // Refill Alligator's balance for gas refunds
+    receive() external payable {}
 }
