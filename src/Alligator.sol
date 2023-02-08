@@ -253,7 +253,7 @@ contract Alligator {
             if (rules.notValidAfter != 0 && block.timestamp > rules.notValidAfter) {
                 revert NotValidAnymore(from, to, rules.notValidAfter);
             }
-            if (rules.blocksBeforeVoteCloses != 0 && proposal.endBlock - block.number > rules.blocksBeforeVoteCloses) {
+            if (rules.blocksBeforeVoteCloses != 0 && proposal.endBlock > block.number + rules.blocksBeforeVoteCloses) {
                 revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
             }
             if (rules.customRule != address(0)) {
