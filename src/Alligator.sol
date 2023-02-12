@@ -96,7 +96,7 @@ contract Alligator {
         governor = _governor;
     }
 
-    function create(address owner) external returns (address endpoint) {
+    function create(address owner) public returns (address endpoint) {
         bytes32 salt = bytes32(uint256(uint160(owner)));
         endpoint = address(new Proxy{salt: salt}(address(governor)));
         emit ProxyDeployed(owner, endpoint);
@@ -202,7 +202,6 @@ contract Alligator {
     }
 
     function sign(address[] calldata authority, bytes32 hash) external {
-        // TODO: Prop House EIP-712 support
         validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
 
         address proxy = proxyAddress(authority[0]);
@@ -216,7 +215,6 @@ contract Alligator {
         returns (bytes4 magicValue)
     {
         if (data.length > 0) {
-            // TODO: can we trust the signature as is?
             (address[] memory authority, bytes memory signature) = abi.decode(data, (address[], bytes));
             address signer = ECDSA.recover(hash, signature);
             validate(signer, authority, PERMISSION_SIGN, 0, 0xFE);
@@ -226,13 +224,25 @@ contract Alligator {
     }
 
     function subDelegate(address to, Rules calldata rules) external {
-        // TODO: Batched version
         subDelegations[msg.sender][to] = rules;
         emit SubDelegation(msg.sender, to, rules);
     }
 
+    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules) external {
+        address proxy = proxyAddress(msg.sender);
+        if (proxy.code.length == 0) {
+            create(msg.sender);
+        }
+
+        require(targets.length == rules.length);
+        for (uint256 i = 0; i < targets.length; i++) {
+            subDelegations[msg.sender][targets[i]] = rules[i];
+            emit SubDelegation(msg.sender, targets[i], rules[i]);
+        }
+    }
+
     function validate(address sender, address[] memory authority, uint8 permissions, uint256 proposalId, uint8 support)
-        internal
+        public
         view
     {
         address from = authority[0];

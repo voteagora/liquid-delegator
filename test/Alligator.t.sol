@@ -51,6 +51,42 @@ contract AlligatorTest is Test {
         assertEq(nounsDAO.lastVoter(), root);
     }
 
+    function testSubDelegateBatched() public {
+        address[] memory targets = new address[](2);
+        targets[0] = Utils.bob;
+        targets[1] = Utils.carol;
+
+        Rules[] memory rules = new Rules[](2);
+        rules[0] = Rules({
+            permissions: 0x01,
+            maxRedelegations: 255,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+        rules[1] = Rules({
+            permissions: 0x02,
+            maxRedelegations: 255,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        vm.prank(Utils.alice);
+        alligator.subDelegateBatched(targets, rules);
+
+        address aliceProxy = alligator.proxyAddress(Utils.alice);
+        assertGt(aliceProxy.code.length, 0);
+
+        (uint8 bobPermissions,,,,,) = alligator.subDelegations(Utils.alice, Utils.bob);
+        assertEq(bobPermissions, 0x01);
+
+        (uint8 carolPermissions,,,,,) = alligator.subDelegations(Utils.alice, Utils.carol);
+        assertEq(carolPermissions, 0x02);
+    }
+
     function testNestedSubDelegate() public {
         address[] memory authority = new address[](4);
         authority[0] = address(this);
