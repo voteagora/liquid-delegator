@@ -237,6 +237,11 @@ contract Alligator is ENSHelper {
     }
 
     function subDelegate(address to, Rules calldata rules) external {
+        address proxy = proxyAddress(msg.sender);
+        if (proxy.code.length == 0) {
+            create(msg.sender);
+        }
+
         subDelegations[msg.sender][to] = rules;
         emit SubDelegation(msg.sender, to, rules);
     }
