@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {IGovernorBravo} from "./interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
 import {IRule} from "./interfaces/IRule.sol";
+import {ENSHelper} from "./ENSHelper.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -29,6 +30,11 @@ contract Proxy is IERC1271 {
         return Alligator(payable(owner)).isValidProxySignature(address(this), hash, signature);
     }
 
+    function setENSReverseRecord(string calldata name) external {
+        require(msg.sender == owner);
+        IENSReverseRegistrar(0x084b1c3C81545d370f3634392De611CaaBFf8148).setName(name);
+    }
+
     fallback() external payable {
         require(msg.sender == owner);
         address addr = governor;
@@ -48,7 +54,7 @@ contract Proxy is IERC1271 {
     }
 }
 
-contract Alligator {
+contract Alligator is ENSHelper {
     INounsDAOV2 public immutable governor;
 
     // From => To => Rules
@@ -92,7 +98,9 @@ contract Alligator {
     error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
     error InvalidCustomRule(address from, address to, address customRule);
 
-    constructor(INounsDAOV2 _governor) {
+    constructor(INounsDAOV2 _governor, string memory _ensName, bytes32 _ensNameHash)
+        ENSHelper(_ensName, _ensNameHash)
+    {
         governor = _governor;
     }
 
@@ -100,6 +108,11 @@ contract Alligator {
         bytes32 salt = bytes32(uint256(uint160(owner)));
         endpoint = address(new Proxy{salt: salt}(address(governor)));
         emit ProxyDeployed(owner, endpoint);
+
+        if (ensNameHash != 0) {
+            string memory reverseName = registerDeployment(endpoint);
+            Proxy(payable(endpoint)).setENSReverseRecord(reverseName);
+        }
     }
 
     function proxyAddress(address owner) public view returns (address endpoint) {
@@ -310,4 +323,8 @@ contract Alligator {
 
     // Refill Alligator's balance for gas refunds
     receive() external payable {}
+}
+
+interface IENSReverseRegistrar {
+    function setName(string memory name) external returns (bytes32 node);
 }

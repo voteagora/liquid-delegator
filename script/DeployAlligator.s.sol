@@ -23,7 +23,7 @@ contract DeployAlligatorScript is Script {
         FreeNounsTonken nounsToken = FreeNounsTonken(address(0x391de1cEa53bD058fFf3216F36a3009D34cFa8D9));
         address nounsDAO = 0x8044715f20bE17CE0F92535c2968789e3B19CC09;
 
-        Alligator alligator = new Alligator(INounsDAOV2(nounsDAO));
+        Alligator alligator = new Alligator(INounsDAOV2(nounsDAO), "", 0);
         address proxy = alligator.create(deployer);
         nounsToken.delegate(proxy);
 

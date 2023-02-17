@@ -10,7 +10,7 @@ contract DeployNounsAlligatorScript is Script {
         address deployer = vm.rememberKey(vm.envUint("DEPLOYER_KEY"));
 
         vm.startBroadcast(deployer);
-        Alligator alligator = new Alligator(INounsDAOV2(0x6f3E6272A167e8AcCb32072d08E0957F9c79223d));
+        Alligator alligator = new Alligator(INounsDAOV2(0x6f3E6272A167e8AcCb32072d08E0957F9c79223d), "", 0);
         vm.stopBroadcast();
 
         console.log("Alligator deployed at", address(alligator));

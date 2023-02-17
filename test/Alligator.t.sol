@@ -15,7 +15,7 @@ contract AlligatorTest is Test {
 
     function setUp() public {
         nounsDAO = new NounsDAO();
-        alligator = new Alligator(nounsDAO);
+        alligator = new Alligator(nounsDAO, "", 0);
         root = alligator.create(address(this));
     }
 
