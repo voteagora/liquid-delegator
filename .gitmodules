@@ -10,3 +10,7 @@
 [submodule "lib/base64"]
 	path = lib/base64
 	url = https://github.com/Brechtpd/base64
+[submodule "lib/ens-contracts"]
+	path = lib/ens-contracts
+	url = https://github.com/ensdomains/ens-contracts
+	branch = v0.0.8
