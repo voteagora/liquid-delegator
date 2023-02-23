@@ -58,7 +58,7 @@ Alligator is designed to work without holding user's tokens.
 
 ### Authority chains
 
-When a user votes via Alligator, they need to construct an authority chain off-chain and send it with their request (similar to Uniswap routing). This way Alligator can only store the essential information and pushes the complexity of finding the most benefitial chain.
+When a user votes via Alligator, they need to construct an authority chain off-chain and send it with their request (similar to Uniswap routing). This way Alligator can only store the essential information and pushes the complexity of finding the most beneficial chain.
 
 The authority chain can be constructed by listening to on-chain subdelegation events and reconstructing graphs. It's possible there will be a few authority chains available to the same user with different constraints.
 
@@ -75,7 +75,7 @@ The authority chain can be constructed by listening to on-chain subdelegation ev
 └────────┴────────┴───────────────┘
 ```
 
-In the example above, the user `0xCCC` can use `0xAAA`'s and `0xFFF`'s voting powerby calling:
+In the example above, the user `0xCCC` can use `0xAAA`'s and `0xFFF`'s voting power by calling:
 
 ```
 Alligator.castVotesWithReasonBatched([[0xAAA, 0xBBB, 0xCCC], [0xFFF, 0xCCC]], 1, 1, "");
