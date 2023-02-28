@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import './interfaces/IAlligator.sol';
 import {IGovernorBravo} from './interfaces/IGovernorBravo.sol';
 import {INounsDAOV2} from './interfaces/INounsDAOV2.sol';
 import {IRule} from './interfaces/IRule.sol';
 import {ENSHelper} from './ENSHelper.sol';
 import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import './interfaces/IAlligator.sol';
 
 contract Proxy is IERC1271 {
   address internal immutable alligator;
@@ -51,7 +51,23 @@ contract Proxy is IERC1271 {
   // Receive function is omitted to minimize contract size
 }
 
-contract Alligator is ENSHelper, IAlligator {
+contract Alligator is IAlligator, ENSHelper {
+  // =============================================================
+  //                             ERRORS
+  // =============================================================
+
+  error BadSignature();
+  error NotDelegated(address from, address to, uint8 requiredPermissions);
+  error TooManyRedelegations(address from, address to);
+  error NotValidYet(address from, address to, uint32 willBeValidFrom);
+  error NotValidAnymore(address from, address to, uint32 wasValidUntil);
+  error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
+  error InvalidCustomRule(address from, address to, address customRule);
+
+  // =============================================================
+  //                            STORAGE
+  // =============================================================
+
   INounsDAOV2 public immutable governor;
 
   // From => To => Rules
@@ -79,25 +95,9 @@ contract Alligator is ENSHelper, IAlligator {
   /// @notice The maximum basefee the DAO will refund voters on
   uint256 public constant MAX_REFUND_BASE_FEE = 200 gwei;
 
-  event ProxyDeployed(address indexed owner, address proxy);
-  event SubDelegation(address indexed from, address indexed to, Rules rules);
-  event VoteCast(
-    address indexed proxy,
-    address indexed voter,
-    address[] authority,
-    uint256 proposalId,
-    uint8 support
-  );
-  event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
-  event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
-
-  error BadSignature();
-  error NotDelegated(address from, address to, uint8 requiredPermissions);
-  error TooManyRedelegations(address from, address to);
-  error NotValidYet(address from, address to, uint32 willBeValidFrom);
-  error NotValidAnymore(address from, address to, uint32 wasValidUntil);
-  error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
-  error InvalidCustomRule(address from, address to, address customRule);
+  // =============================================================
+  //                           CONSTRUCTOR
+  // =============================================================
 
   constructor(
     INounsDAOV2 _governor,
@@ -107,6 +107,11 @@ contract Alligator is ENSHelper, IAlligator {
     governor = _governor;
   }
 
+  // =============================================================
+  //                         WRITE FUNCTIONS
+  // =============================================================
+
+  /// @notice Deploy a new Proxy for an owner deterministically.
   function create(address owner) public returns (address endpoint) {
     endpoint = address(new Proxy{salt: bytes32(uint256(uint160(owner)))}(address(governor)));
     emit ProxyDeployed(owner, endpoint);
@@ -117,23 +122,7 @@ contract Alligator is ENSHelper, IAlligator {
     }
   }
 
-  function proxyAddress(address owner) public view returns (address endpoint) {
-    endpoint = address(
-      uint160(
-        uint256(
-          keccak256(
-            abi.encodePacked(
-              bytes1(0xff),
-              address(this),
-              bytes32(uint256(uint160(owner))), // salt
-              keccak256(abi.encodePacked(type(Proxy).creationCode, abi.encode(address(governor))))
-            )
-          )
-        )
-      )
-    );
-  }
-
+  /// @notice Validate subdelegation rules and make a proposal to the governor.
   function propose(
     address[] calldata authority,
     address[] calldata targets,
@@ -148,6 +137,7 @@ contract Alligator is ENSHelper, IAlligator {
     validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
   }
 
+  /// @notice Validate subdelegation rules and cast a vote on the governor.
   function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
     validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
 
@@ -156,6 +146,7 @@ contract Alligator is ENSHelper, IAlligator {
     emit VoteCast(proxy, msg.sender, authority, proposalId, support);
   }
 
+  /// @notice Validate subdelegation rules and cast a vote with reason on the governor.
   function castVoteWithReason(
     address[] calldata authority,
     uint256 proposalId,
@@ -169,6 +160,7 @@ contract Alligator is ENSHelper, IAlligator {
     emit VoteCast(proxy, msg.sender, authority, proposalId, support);
   }
 
+  /// @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
   function castVotesWithReasonBatched(
     address[][] calldata authorities,
     uint256 proposalId,
@@ -184,6 +176,8 @@ contract Alligator is ENSHelper, IAlligator {
     }
   }
 
+  /// @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
+  // Refunds the gas used to cast the votes, if possible.
   function castRefundableVotesWithReasonBatched(
     address[][] calldata authorities,
     uint256 proposalId,
@@ -197,6 +191,7 @@ contract Alligator is ENSHelper, IAlligator {
     _refundGas(startGas);
   }
 
+  /// @notice Validate subdelegation rules and cast a vote by signature on the governor.
   function castVoteBySig(
     address[] calldata authority,
     uint256 proposalId,
@@ -223,6 +218,7 @@ contract Alligator is ENSHelper, IAlligator {
     emit VoteCast(proxy, signatory, authority, proposalId, support);
   }
 
+  /// @notice Validate subdelegation rules and sign a hash.
   function sign(address[] calldata authority, bytes32 hash) external {
     validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
 
@@ -231,20 +227,7 @@ contract Alligator is ENSHelper, IAlligator {
     emit Signed(proxy, authority, hash);
   }
 
-  function isValidProxySignature(
-    address proxy,
-    bytes32 hash,
-    bytes calldata data
-  ) public view returns (bytes4 magicValue) {
-    if (data.length > 0) {
-      (address[] memory authority, bytes memory signature) = abi.decode(data, (address[], bytes));
-      address signer = ECDSA.recover(hash, signature);
-      validate(signer, authority, PERMISSION_SIGN, 0, 0xFE);
-      return IERC1271.isValidSignature.selector;
-    }
-    return validSignatures[proxy][hash] ? IERC1271.isValidSignature.selector : bytes4(0);
-  }
-
+  /// @notice Subdelegate an address with rules.
   function subDelegate(address to, Rules calldata rules) external {
     address proxy = proxyAddress(msg.sender);
     if (proxy.code.length == 0) {
@@ -255,6 +238,7 @@ contract Alligator is ENSHelper, IAlligator {
     emit SubDelegation(msg.sender, to, rules);
   }
 
+  /// @notice Subdelegate multiple addresses with rules.
   function subDelegateBatched(address[] calldata targets, Rules[] calldata rules) external {
     address proxy = proxyAddress(msg.sender);
     if (proxy.code.length == 0) {
@@ -272,6 +256,14 @@ contract Alligator is ENSHelper, IAlligator {
     }
   }
 
+  // Refill Alligator's balance for gas refunds
+  receive() external payable {}
+
+  // =============================================================
+  //                         VIEW FUNCTIONS
+  // =============================================================
+
+  /// @notice Validate subdelegation rules.
   function validate(
     address sender,
     address[] memory authority,
@@ -338,6 +330,43 @@ contract Alligator is ENSHelper, IAlligator {
     revert NotDelegated(from, sender, permissions);
   }
 
+  /// @notice Returns the `IERC1271.isValidSignature` if signature is valid, or 0 if not.
+  function isValidProxySignature(
+    address proxy,
+    bytes32 hash,
+    bytes calldata data
+  ) public view returns (bytes4 magicValue) {
+    if (data.length > 0) {
+      (address[] memory authority, bytes memory signature) = abi.decode(data, (address[], bytes));
+      address signer = ECDSA.recover(hash, signature);
+      validate(signer, authority, PERMISSION_SIGN, 0, 0xFE);
+      return IERC1271.isValidSignature.selector;
+    }
+    return validSignatures[proxy][hash] ? IERC1271.isValidSignature.selector : bytes4(0);
+  }
+
+  /// @notice Returns the address of the proxy contract for a given owner
+  function proxyAddress(address owner) public view returns (address endpoint) {
+    endpoint = address(
+      uint160(
+        uint256(
+          keccak256(
+            abi.encodePacked(
+              bytes1(0xff),
+              address(this),
+              bytes32(uint256(uint160(owner))), // salt
+              keccak256(abi.encodePacked(type(Proxy).creationCode, abi.encode(address(governor))))
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // =============================================================
+  //                       INTERNAL FUNCTIONS
+  // =============================================================
+
   function _refundGas(uint256 startGas) internal {
     unchecked {
       uint256 balance = address(this).balance;
@@ -356,9 +385,6 @@ contract Alligator is ENSHelper, IAlligator {
   function min(uint256 a, uint256 b) internal pure returns (uint256) {
     return a < b ? a : b;
   }
-
-  // Refill Alligator's balance for gas refunds
-  receive() external payable {}
 }
 
 interface IENSReverseRegistrar {

@@ -11,6 +11,18 @@ struct Rules {
 }
 
 interface IAlligator {
+  event ProxyDeployed(address indexed owner, address proxy);
+  event SubDelegation(address indexed from, address indexed to, Rules rules);
+  event VoteCast(
+    address indexed proxy,
+    address indexed voter,
+    address[] authority,
+    uint256 proposalId,
+    uint8 support
+  );
+  event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
+  event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
+
   function create(address owner) external returns (address endpoint);
 
   function proxyAddress(address owner) external view returns (address endpoint);
