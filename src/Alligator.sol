@@ -48,7 +48,7 @@ contract Proxy is IERC1271 {
     }
   }
 
-  //  Receive function is omitted to minimize contract size
+  // Receive function is omitted to minimize contract size
 }
 
 contract Alligator is ENSHelper, IAlligator {
@@ -288,45 +288,46 @@ contract Alligator is ENSHelper, IAlligator {
     uint256 authorityLength = authority.length;
     address to;
     Rules memory rules;
-    for (uint256 i = 1; i < authorityLength; ) {
-      to = authority[i];
-      rules = subDelegations[from][to];
 
-      if ((rules.permissions & permissions) != permissions) {
-        revert NotDelegated(from, to, permissions);
-      }
-      if (rules.maxRedelegations + i + 1 < authorityLength) {
-        revert TooManyRedelegations(from, to);
-      }
-      if (block.timestamp < rules.notValidBefore) {
-        revert NotValidYet(from, to, rules.notValidBefore);
-      }
-      if (rules.notValidAfter != 0) {
-        if (block.timestamp > rules.notValidAfter)
-          revert NotValidAnymore(from, to, rules.notValidAfter);
-      }
-      if (rules.blocksBeforeVoteCloses != 0) {
-        INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
-        if (proposal.endBlock > block.number + rules.blocksBeforeVoteCloses) {
-          revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
+    /// @dev maxRedelegations would hit block size limit before overflowing
+    /// @dev block.number + rules.blocksBeforeVoteCloses fits in uint256
+    unchecked {
+      for (uint256 i = 1; i < authorityLength; ++i) {
+        to = authority[i];
+        rules = subDelegations[from][to];
+
+        if ((rules.permissions & permissions) != permissions) {
+          revert NotDelegated(from, to, permissions);
         }
-      }
-      if (rules.customRule != address(0)) {
-        bytes4 selector = IRule(rules.customRule).validate(
-          address(governor),
-          sender,
-          proposalId,
-          support
-        );
-        if (selector != IRule.validate.selector) {
-          revert InvalidCustomRule(from, to, rules.customRule);
+        if (rules.maxRedelegations + i + 1 < authorityLength) {
+          revert TooManyRedelegations(from, to);
         }
-      }
+        if (block.timestamp < rules.notValidBefore) {
+          revert NotValidYet(from, to, rules.notValidBefore);
+        }
+        if (rules.notValidAfter != 0) {
+          if (block.timestamp > rules.notValidAfter)
+            revert NotValidAnymore(from, to, rules.notValidAfter);
+        }
+        if (rules.blocksBeforeVoteCloses != 0) {
+          INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
+          if (proposal.endBlock > block.number + rules.blocksBeforeVoteCloses) {
+            revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
+          }
+        }
+        if (rules.customRule != address(0)) {
+          bytes4 selector = IRule(rules.customRule).validate(
+            address(governor),
+            sender,
+            proposalId,
+            support
+          );
+          if (selector != IRule.validate.selector) {
+            revert InvalidCustomRule(from, to, rules.customRule);
+          }
+        }
 
-      from = to;
-
-      unchecked {
-        ++i;
+        from = to;
       }
     }
 
