@@ -58,9 +58,9 @@ contract Alligator is ENSHelper, IAlligator {
   mapping(address => mapping(address => Rules)) public subDelegations;
   mapping(address => mapping(bytes32 => bool)) internal validSignatures;
 
-  uint8 internal constant PERMISSION_VOTE = 0x01;
-  uint8 internal constant PERMISSION_SIGN = 0x02;
-  uint8 internal constant PERMISSION_PROPOSE = 0x04;
+  uint8 internal constant PERMISSION_VOTE = 1;
+  uint8 internal constant PERMISSION_SIGN = 1 << 1;
+  uint8 internal constant PERMISSION_PROPOSE = 1 << 2;
 
   bytes32 internal constant DOMAIN_TYPEHASH =
     keccak256('EIP712Domain(string name,uint256 chainId,address verifyingContract)');
@@ -108,8 +108,7 @@ contract Alligator is ENSHelper, IAlligator {
   }
 
   function create(address owner) public returns (address endpoint) {
-    bytes32 salt = bytes32(uint256(uint160(owner)));
-    endpoint = address(new Proxy{salt: salt}(address(governor)));
+    endpoint = address(new Proxy{salt: bytes32(uint256(uint160(owner)))}(address(governor)));
     emit ProxyDeployed(owner, endpoint);
 
     if (ensNameHash != 0) {
@@ -119,7 +118,6 @@ contract Alligator is ENSHelper, IAlligator {
   }
 
   function proxyAddress(address owner) public view returns (address endpoint) {
-    bytes32 salt = bytes32(uint256(uint160(owner)));
     endpoint = address(
       uint160(
         uint256(
@@ -127,7 +125,7 @@ contract Alligator is ENSHelper, IAlligator {
             abi.encodePacked(
               bytes1(0xff),
               address(this),
-              salt,
+              bytes32(uint256(uint160(owner))), // salt
               keccak256(abi.encodePacked(type(Proxy).creationCode, abi.encode(address(governor))))
             )
           )
@@ -177,8 +175,12 @@ contract Alligator is ENSHelper, IAlligator {
     uint8 support,
     string calldata reason
   ) public {
-    for (uint256 i = 0; i < authorities.length; i++) {
+    for (uint256 i; i < authorities.length; ) {
       castVoteWithReason(authorities[i], proposalId, support, reason);
+
+      unchecked {
+        ++i;
+      }
     }
   }
 
@@ -260,9 +262,13 @@ contract Alligator is ENSHelper, IAlligator {
     }
 
     require(targets.length == rules.length);
-    for (uint256 i = 0; i < targets.length; i++) {
+    for (uint256 i; i < targets.length; ) {
       subDelegations[msg.sender][targets[i]] = rules[i];
       emit SubDelegation(msg.sender, targets[i], rules[i]);
+
+      unchecked {
+        ++i;
+      }
     }
   }
 
@@ -279,29 +285,31 @@ contract Alligator is ENSHelper, IAlligator {
       return;
     }
 
-    INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
-
-    for (uint256 i = 1; i < authority.length; i++) {
-      address to = authority[i];
-      Rules memory rules = subDelegations[from][to];
+    uint256 authorityLength = authority.length;
+    address to;
+    Rules memory rules;
+    for (uint256 i = 1; i < authorityLength; ) {
+      to = authority[i];
+      rules = subDelegations[from][to];
 
       if ((rules.permissions & permissions) != permissions) {
         revert NotDelegated(from, to, permissions);
       }
-      if (rules.maxRedelegations + i + 1 < authority.length) {
+      if (rules.maxRedelegations + i + 1 < authorityLength) {
         revert TooManyRedelegations(from, to);
       }
       if (block.timestamp < rules.notValidBefore) {
         revert NotValidYet(from, to, rules.notValidBefore);
       }
-      if (rules.notValidAfter != 0 && block.timestamp > rules.notValidAfter) {
-        revert NotValidAnymore(from, to, rules.notValidAfter);
+      if (rules.notValidAfter != 0) {
+        if (block.timestamp > rules.notValidAfter)
+          revert NotValidAnymore(from, to, rules.notValidAfter);
       }
-      if (
-        rules.blocksBeforeVoteCloses != 0 &&
-        proposal.endBlock > block.number + rules.blocksBeforeVoteCloses
-      ) {
-        revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
+      if (rules.blocksBeforeVoteCloses != 0) {
+        INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
+        if (proposal.endBlock > block.number + rules.blocksBeforeVoteCloses) {
+          revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
+        }
       }
       if (rules.customRule != address(0)) {
         bytes4 selector = IRule(rules.customRule).validate(
@@ -316,6 +324,10 @@ contract Alligator is ENSHelper, IAlligator {
       }
 
       from = to;
+
+      unchecked {
+        ++i;
+      }
     }
 
     if (from == sender) {
