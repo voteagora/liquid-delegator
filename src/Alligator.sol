@@ -48,7 +48,7 @@ contract Proxy is IERC1271 {
     }
   }
 
-  //   Receive function is omitted to minimize contract size
+  //  Receive function is omitted to minimize contract size
 }
 
 contract Alligator is ENSHelper, IAlligator {
