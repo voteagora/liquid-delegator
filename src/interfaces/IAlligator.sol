@@ -20,6 +20,13 @@ interface IAlligator {
     uint256 proposalId,
     uint8 support
   );
+  event VotesCast(
+    address[] proxies,
+    address indexed voter,
+    address[][] authorities,
+    uint256 proposalId,
+    uint8 support
+  );
   event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
   event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
