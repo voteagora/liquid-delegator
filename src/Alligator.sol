@@ -97,10 +97,11 @@ contract Alligator is IAlligator, ENSHelper {
 
   // From => To => Rules
   mapping(address => mapping(address => Rules)) public subDelegations;
+  // Proxy address => hash => valid boolean
   mapping(address => mapping(bytes32 => bool)) internal validSignatures;
 
   // =============================================================
-  //                           CONSTRUCTOR
+  //                         CONSTRUCTOR
   // =============================================================
 
   constructor(
@@ -112,7 +113,7 @@ contract Alligator is IAlligator, ENSHelper {
   }
 
   // =============================================================
-  //                         WRITE FUNCTIONS
+  //                       WRITE FUNCTIONS
   // =============================================================
 
   /// @notice Deploy a new Proxy for an owner deterministically.
