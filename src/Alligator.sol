@@ -167,17 +167,24 @@ contract Alligator is IAlligator, ENSHelper {
     uint8 support,
     string calldata reason
   ) public {
+    address[] memory proxies = new address[](authorities.length);
+    address[] memory authority;
     for (uint256 i; i < authorities.length; ) {
-      castVoteWithReason(authorities[i], proposalId, support, reason);
+      authority = authorities[i];
+      validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
+      proxies[i] = proxyAddress(authority[0]);
+      INounsDAOV2(proxies[i]).castVoteWithReason(proposalId, support, reason);
 
       unchecked {
         ++i;
       }
     }
+
+    emit VotesCast(proxies, msg.sender, authorities, proposalId, support);
   }
 
   /// @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
-  // Refunds the gas used to cast the votes, if possible.
+  /// Refunds the gas used to cast the votes, if possible.
   function castRefundableVotesWithReasonBatched(
     address[][] calldata authorities,
     uint256 proposalId,
@@ -308,13 +315,10 @@ contract Alligator is IAlligator, ENSHelper {
           }
         }
         if (rules.customRule != address(0)) {
-          bytes4 selector = IRule(rules.customRule).validate(
-            address(governor),
-            sender,
-            proposalId,
-            support
-          );
-          if (selector != IRule.validate.selector) {
+          if (
+            IRule(rules.customRule).validate(address(governor), sender, proposalId, support) !=
+            IRule.validate.selector
+          ) {
             revert InvalidCustomRule(from, to, rules.customRule);
           }
         }
