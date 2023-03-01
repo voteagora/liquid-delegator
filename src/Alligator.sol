@@ -22,7 +22,7 @@ contract Proxy is IERC1271 {
     bytes32 hash,
     bytes calldata signature
   ) external view override returns (bytes4) {
-    return IAlligator(payable(alligator)).isValidProxySignature(address(this), hash, signature);
+    return IAlligator(alligator).isValidProxySignature(address(this), hash, signature);
   }
 
   function setENSReverseRecord(string calldata name) external {
@@ -48,7 +48,7 @@ contract Proxy is IERC1271 {
     }
   }
 
-  // Receive function is omitted to minimize contract size
+  // `receive` is omitted to minimize contract size
 }
 
 contract Alligator is IAlligator, ENSHelper {
@@ -65,14 +65,10 @@ contract Alligator is IAlligator, ENSHelper {
   error InvalidCustomRule(address from, address to, address customRule);
 
   // =============================================================
-  //                            STORAGE
+  //                       IMMUTABLE STORAGE
   // =============================================================
 
   INounsDAOV2 public immutable governor;
-
-  // From => To => Rules
-  mapping(address => mapping(address => Rules)) public subDelegations;
-  mapping(address => mapping(bytes32 => bool)) internal validSignatures;
 
   uint8 internal constant PERMISSION_VOTE = 1;
   uint8 internal constant PERMISSION_SIGN = 1 << 1;
@@ -94,6 +90,14 @@ contract Alligator is IAlligator, ENSHelper {
 
   /// @notice The maximum basefee the DAO will refund voters on
   uint256 public constant MAX_REFUND_BASE_FEE = 200 gwei;
+
+  // =============================================================
+  //                        MUTABLE STORAGE
+  // =============================================================
+
+  // From => To => Rules
+  mapping(address => mapping(address => Rules)) public subDelegations;
+  mapping(address => mapping(bytes32 => bool)) internal validSignatures;
 
   // =============================================================
   //                           CONSTRUCTOR
