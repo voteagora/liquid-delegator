@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import 'forge-std/Script.sol';
-import {IProxyRegistry} from 'noun-contracts/external/opensea/IProxyRegistry.sol';
-import {NounsDAOExecutor} from 'noun-contracts/governance/NounsDAOExecutor.sol';
-import {NounsDAOLogicV2} from 'noun-contracts/governance/NounsDAOLogicV2.sol';
-import {NounsDAOProxyV2} from 'noun-contracts/governance/NounsDAOProxyV2.sol';
-import {NounsDAOStorageV2} from 'noun-contracts/governance/NounsDAOInterfaces.sol';
-import {NounsDescriptor} from 'noun-contracts/NounsDescriptor.sol';
-import {FreeNounsTonken} from './FreeNounsToken.sol';
-import {NounsSeeder} from 'noun-contracts/NounsSeeder.sol';
-import {Alligator, Rules} from '../src/Alligator.sol';
-import {INounsDAOV2} from '../src/interfaces/INounsDAOV2.sol';
-import {DescriptorImageData} from './DescriptorImageData.sol';
+import "forge-std/Script.sol";
+import {IProxyRegistry} from "noun-contracts/external/opensea/IProxyRegistry.sol";
+import {NounsDAOExecutor} from "noun-contracts/governance/NounsDAOExecutor.sol";
+import {NounsDAOLogicV2} from "noun-contracts/governance/NounsDAOLogicV2.sol";
+import {NounsDAOProxyV2} from "noun-contracts/governance/NounsDAOProxyV2.sol";
+import {NounsDAOStorageV2} from "noun-contracts/governance/NounsDAOInterfaces.sol";
+import {NounsDescriptor} from "noun-contracts/NounsDescriptor.sol";
+import {FreeNounsTonken} from "./FreeNounsToken.sol";
+import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
+import {Alligator, Rules} from "../src/Alligator.sol";
+import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
+import {DescriptorImageData} from "./DescriptorImageData.sol";
 
 contract DeployAlligatorScript is Script {
     function run() public {
@@ -27,7 +27,7 @@ contract DeployAlligatorScript is Script {
         );
         address nounsDAO = 0x8044715f20bE17CE0F92535c2968789e3B19CC09;
 
-        Alligator alligator = new Alligator(INounsDAOV2(nounsDAO), '', 0);
+        Alligator alligator = new Alligator(INounsDAOV2(nounsDAO), "", 0);
         address proxy = alligator.create(deployer);
         nounsToken.delegate(proxy);
 

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
-import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
-import {IAddrResolver} from 'ens-contracts/resolvers/profiles/IAddrResolver.sol';
-import {ENS} from 'ens-contracts/registry/ENS.sol';
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IAddrResolver} from "ens-contracts/resolvers/profiles/IAddrResolver.sol";
+import {ENS} from "ens-contracts/registry/ENS.sol";
 
 contract ENSHelper is IERC165, IAddrResolver {
     string public ensName;
@@ -22,7 +22,7 @@ contract ENSHelper is IERC165, IAddrResolver {
         numberOfProxiesDeployed += 1;
 
         string memory subdomain = Strings.toString(numberOfProxiesDeployed);
-        reverseENSName = string.concat(subdomain, '.', ensName);
+        reverseENSName = string.concat(subdomain, ".", ensName);
 
         bytes32 label = keccak256(abi.encodePacked(subdomain));
         bytes32 namehash = keccak256(abi.encodePacked(ensNameHash, label));

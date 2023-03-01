@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import 'forge-std/Script.sol';
-import {IProxyRegistry} from 'noun-contracts/external/opensea/IProxyRegistry.sol';
-import {NounsDAOExecutor} from 'noun-contracts/governance/NounsDAOExecutor.sol';
-import {NounsDAOLogicV2} from 'noun-contracts/governance/NounsDAOLogicV2.sol';
-import {NounsDAOProxyV2} from 'noun-contracts/governance/NounsDAOProxyV2.sol';
-import {NounsDAOStorageV2} from 'noun-contracts/governance/NounsDAOInterfaces.sol';
-import {NounsDescriptor} from 'noun-contracts/NounsDescriptor.sol';
-import {FreeNounsTonken} from './FreeNounsToken.sol';
-import {NounsSeeder} from 'noun-contracts/NounsSeeder.sol';
-import {INounsDAOV2} from '../src/interfaces/INounsDAOV2.sol';
-import {DescriptorImageData} from './DescriptorImageData.sol';
+import "forge-std/Script.sol";
+import {IProxyRegistry} from "noun-contracts/external/opensea/IProxyRegistry.sol";
+import {NounsDAOExecutor} from "noun-contracts/governance/NounsDAOExecutor.sol";
+import {NounsDAOLogicV2} from "noun-contracts/governance/NounsDAOLogicV2.sol";
+import {NounsDAOProxyV2} from "noun-contracts/governance/NounsDAOProxyV2.sol";
+import {NounsDAOStorageV2} from "noun-contracts/governance/NounsDAOInterfaces.sol";
+import {NounsDescriptor} from "noun-contracts/NounsDescriptor.sol";
+import {FreeNounsTonken} from "./FreeNounsToken.sol";
+import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
+import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
+import {DescriptorImageData} from "./DescriptorImageData.sol";
 
 contract DeployScript is Script {
     uint256 constant TIMELOCK_DELAY = 2 days;
@@ -42,7 +42,7 @@ contract DeployScript is Script {
 
         {
             string[] memory strs = new string[](1);
-            strs[0] = '#fff';
+            strs[0] = "#fff";
             bytes[] memory bts = new bytes[](1);
             bts[0] = bytes(strs[0]);
 
@@ -77,6 +77,6 @@ contract DeployScript is Script {
         nounsToken.mint(deployer, 2);
         nounsToken.mint(deployer, 3);
 
-        console.log('NounsDAOProxyV2', address(proxy));
+        console.log("NounsDAOProxyV2", address(proxy));
     }
 }

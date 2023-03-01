@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IGovernorBravo} from './IGovernorBravo.sol';
+import {IGovernorBravo} from "./IGovernorBravo.sol";
 
 interface INounsDAOV2 is IGovernorBravo {
     struct ProposalCondensed {

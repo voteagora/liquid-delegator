@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import '../structs/Rules.sol';
+import "../structs/Rules.sol";
 
 interface IAlligator {
     event ProxyDeployed(address indexed owner, address proxy);

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import './interfaces/IAlligator.sol';
-import {INounsDAOV2} from './interfaces/INounsDAOV2.sol';
-import {IRule} from './interfaces/IRule.sol';
-import {ENSHelper} from './ENSHelper.sol';
-import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
-import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import "./interfaces/IAlligator.sol";
+import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
+import {IRule} from "./interfaces/IRule.sol";
+import {ENSHelper} from "./ENSHelper.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract Proxy is IERC1271 {
     address internal immutable alligator;
@@ -74,10 +74,10 @@ contract Alligator is IAlligator, ENSHelper {
     uint8 internal constant PERMISSION_PROPOSE = 1 << 2;
 
     bytes32 internal constant DOMAIN_TYPEHASH =
-        keccak256('EIP712Domain(string name,uint256 chainId,address verifyingContract)');
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
     bytes32 internal constant BALLOT_TYPEHASH =
-        keccak256('Ballot(uint256 proposalId,uint8 support)');
+        keccak256("Ballot(uint256 proposalId,uint8 support)");
 
     /// @notice The maximum priority fee used to cap gas refunds in `castRefundableVote`
     uint256 public constant MAX_REFUND_PRIORITY_FEE = 2 gwei;
@@ -219,10 +219,10 @@ contract Alligator is IAlligator, ENSHelper {
         bytes32 s
     ) external {
         bytes32 domainSeparator = keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256('Alligator'), block.chainid, address(this))
+            abi.encode(DOMAIN_TYPEHASH, keccak256("Alligator"), block.chainid, address(this))
         );
         bytes32 structHash = keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support));
-        bytes32 digest = keccak256(abi.encodePacked('\x19\x01', domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
 
         if (signatory == address(0)) {
@@ -403,7 +403,7 @@ contract Alligator is IAlligator, ENSHelper {
             uint256 gasPrice = min(tx.gasprice, basefee + MAX_REFUND_PRIORITY_FEE);
             uint256 gasUsed = min(startGas - gasleft() + REFUND_BASE_GAS, MAX_REFUND_GAS_USED);
             uint256 refundAmount = min(gasPrice * gasUsed, balance);
-            (bool refundSent, ) = msg.sender.call{value: refundAmount}('');
+            (bool refundSent, ) = msg.sender.call{value: refundAmount}("");
             emit RefundableVote(msg.sender, refundAmount, refundSent);
         }
     }

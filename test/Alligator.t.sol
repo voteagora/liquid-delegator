@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import 'forge-std/Test.sol';
-import {IERC1271} from '@openzeppelin/contracts/interfaces/IERC1271.sol';
-import {IGovernorBravo} from '../src/interfaces/IGovernorBravo.sol';
-import {INounsDAOV2} from '../src/interfaces/INounsDAOV2.sol';
-import '../src/Alligator.sol';
-import './Utils.sol';
+import "forge-std/Test.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
+import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
+import "../src/Alligator.sol";
+import "./Utils.sol";
 
 contract AlligatorTest is Test {
     Alligator public alligator;
@@ -15,7 +15,7 @@ contract AlligatorTest is Test {
 
     function setUp() public {
         nounsDAO = new NounsDAO();
-        alligator = new Alligator(nounsDAO, '', 0);
+        alligator = new Alligator(nounsDAO, "", 0);
         root = alligator.create(address(this));
     }
 
@@ -181,7 +181,7 @@ contract AlligatorTest is Test {
         alligator.subDelegate(Utils.carol, rules);
 
         vm.prank(Utils.carol);
-        alligator.castVotesWithReasonBatched(authorities, 1, 1, '');
+        alligator.castVotesWithReasonBatched(authorities, 1, 1, "");
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(address(this))), true);
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(Utils.bob)), true);
         assertEq(nounsDAO.totalVotes(), 2);
@@ -266,21 +266,21 @@ contract AlligatorTest is Test {
     }
 
     function testSupportsSigning() public {
-        bytes32 hash1 = keccak256(abi.encodePacked('pass'));
-        bytes32 hash2 = keccak256(abi.encodePacked('fail'));
+        bytes32 hash1 = keccak256(abi.encodePacked("pass"));
+        bytes32 hash2 = keccak256(abi.encodePacked("fail"));
 
-        assertEq(IERC1271(root).isValidSignature(hash2, ''), bytes4(0));
+        assertEq(IERC1271(root).isValidSignature(hash2, ""), bytes4(0));
 
         address[] memory authority = new address[](1);
         authority[0] = address(this);
         alligator.sign(authority, hash1);
 
-        assertEq(IERC1271(root).isValidSignature(hash1, ''), IERC1271.isValidSignature.selector);
-        assertEq(IERC1271(root).isValidSignature(hash2, ''), bytes4(0));
+        assertEq(IERC1271(root).isValidSignature(hash1, ""), IERC1271.isValidSignature.selector);
+        assertEq(IERC1271(root).isValidSignature(hash2, ""), bytes4(0));
     }
 
     function testNestedSubDelegateSigning() public {
-        bytes32 hash1 = keccak256(abi.encodePacked('pass'));
+        bytes32 hash1 = keccak256(abi.encodePacked("pass"));
 
         address[] memory authority = new address[](4);
         authority[0] = address(this);
@@ -305,11 +305,11 @@ contract AlligatorTest is Test {
 
         vm.prank(Utils.carol);
         alligator.sign(authority, hash1);
-        assertEq(IERC1271(root).isValidSignature(hash1, ''), IERC1271.isValidSignature.selector);
+        assertEq(IERC1271(root).isValidSignature(hash1, ""), IERC1271.isValidSignature.selector);
     }
 
     function testNestedUnDelegateSigning() public {
-        bytes32 hash1 = keccak256(abi.encodePacked('pass'));
+        bytes32 hash1 = keccak256(abi.encodePacked("pass"));
 
         address[] memory authority = new address[](4);
         authority[0] = address(this);
@@ -348,14 +348,14 @@ contract AlligatorTest is Test {
         vm.prank(Utils.carol);
         vm.expectRevert();
         alligator.sign(authority, hash1);
-        assertEq(IERC1271(root).isValidSignature(hash1, ''), bytes4(0));
+        assertEq(IERC1271(root).isValidSignature(hash1, ""), bytes4(0));
     }
 
     function testOffchainSignatures() public {
         uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
         address signer = vm.addr(privateKey);
-        bytes32 hash1 = keccak256(abi.encodePacked('data'));
-        bytes32 hash2 = keccak256(abi.encodePacked('fake'));
+        bytes32 hash1 = keccak256(abi.encodePacked("data"));
+        bytes32 hash2 = keccak256(abi.encodePacked("fake"));
 
         address[] memory authority = new address[](5);
         authority[0] = address(this);
