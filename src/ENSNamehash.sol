@@ -32,11 +32,7 @@ library ENSNamehash {
         return len;
     }
 
-    function keccak(
-        bytes memory data,
-        uint256 offset,
-        uint256 len
-    ) private pure returns (bytes32 ret) {
+    function keccak(bytes memory data, uint256 offset, uint256 len) private pure returns (bytes32 ret) {
         require(offset + len <= data.length);
         assembly {
             ret := keccak256(add(add(data, 32), offset), len)

@@ -20,11 +20,7 @@ contract AlligatorENSTest is Test {
         Alligator alligator = new Alligator(INounsDAOV2(address(0)), "al.w1nt3r.eth", ensNameHash);
 
         vm.prank(w1nt3r);
-        ens.setSubnodeOwner(
-            ENSNamehash.namehash("w1nt3r.eth"),
-            keccak256(abi.encodePacked("al")),
-            address(alligator)
-        );
+        ens.setSubnodeOwner(ENSNamehash.namehash("w1nt3r.eth"), keccak256(abi.encodePacked("al")), address(alligator));
 
         address proxy1 = alligator.create(address(this));
         assertEq(lookupReverseName(proxy1), "1.al.w1nt3r.eth");
@@ -43,9 +39,7 @@ contract AlligatorENSTest is Test {
     }
 
     function lookupReverseName(address addr) internal view returns (string memory) {
-        IReverseRegistrar ensReverseRegistrar = IReverseRegistrar(
-            0x084b1c3C81545d370f3634392De611CaaBFf8148
-        );
+        IReverseRegistrar ensReverseRegistrar = IReverseRegistrar(0x084b1c3C81545d370f3634392De611CaaBFf8148);
         bytes32 node = ensReverseRegistrar.node(addr);
         return ensReverseRegistrar.defaultResolver().name(node);
     }

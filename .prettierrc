@@ -1,5 +1,5 @@
 {
-  "printWidth": 100,
+  "printWidth": 120,
   "tabWidth": 2,
   "useTabs": false,
   "semi": true,
@@ -9,7 +9,7 @@
     {
       "files": "*.sol",
       "options": {
-        "printWidth": 100,
+        "printWidth": 120,
         "tabWidth": 4,
         "useTabs": false,
         "bracketSpacing": false

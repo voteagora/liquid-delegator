@@ -38,9 +38,7 @@ contract ENSHelper is IERC165, IAddrResolver {
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            interfaceId == type(IAddrResolver).interfaceId ||
-            interfaceId == type(IERC165).interfaceId;
+        return interfaceId == type(IAddrResolver).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 
     function addr(bytes32 node) public view virtual override returns (address payable) {

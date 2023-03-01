@@ -22,18 +22,14 @@ contract DeployScript is Script {
 
     function run() public {
         // Test wallet: 0x77777101E31b4F3ECafF209704E947855eFbd014
-        address deployer = vm.rememberKey(
-            0x98d35887bece258e8e6b407b13c92004d76c2ffe63b4cbbe343839aaca6bdb9f
-        );
+        address deployer = vm.rememberKey(0x98d35887bece258e8e6b407b13c92004d76c2ffe63b4cbbe343839aaca6bdb9f);
 
         // Give all superpowers to the deployer
         address noundersDAO = deployer;
         address minter = deployer;
         address vetoer = deployer;
 
-        IProxyRegistry proxyRegistry = IProxyRegistry(
-            address(0xa5409ec958C83C3f309868babACA7c86DCB077c1)
-        );
+        IProxyRegistry proxyRegistry = IProxyRegistry(address(0xa5409ec958C83C3f309868babACA7c86DCB077c1));
 
         vm.startBroadcast(deployer);
 

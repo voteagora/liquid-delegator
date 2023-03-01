@@ -39,21 +39,11 @@ interface INounsDAOV2 is IGovernorBravo {
 
     function castRefundableVote(uint256 proposalId, uint8 support) external;
 
-    function castRefundableVoteWithReason(
-        uint256 proposalId,
-        uint8 support,
-        string calldata reason
-    ) external;
+    function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external;
 
     function castVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external;
 
-    function castVoteBySig(
-        uint256 proposalId,
-        uint8 support,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+    function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external;
 
     function proposals(uint256 proposalId) external view returns (ProposalCondensed memory);
 

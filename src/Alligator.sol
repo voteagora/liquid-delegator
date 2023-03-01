@@ -17,10 +17,7 @@ contract Proxy is IERC1271 {
         governor = _governor;
     }
 
-    function isValidSignature(
-        bytes32 hash,
-        bytes calldata signature
-    ) external view override returns (bytes4) {
+    function isValidSignature(bytes32 hash, bytes calldata signature) external view override returns (bytes4) {
         return IAlligator(alligator).isValidProxySignature(address(this), hash, signature);
     }
 
@@ -76,8 +73,7 @@ contract Alligator is IAlligator, ENSHelper {
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-    bytes32 internal constant BALLOT_TYPEHASH =
-        keccak256("Ballot(uint256 proposalId,uint8 support)");
+    bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
     /// @notice The maximum priority fee used to cap gas refunds in `castRefundableVote`
     uint256 public constant MAX_REFUND_PRIORITY_FEE = 2 gwei;
@@ -104,11 +100,7 @@ contract Alligator is IAlligator, ENSHelper {
     //                         CONSTRUCTOR
     // =============================================================
 
-    constructor(
-        INounsDAOV2 _governor,
-        string memory _ensName,
-        bytes32 _ensNameHash
-    ) ENSHelper(_ensName, _ensNameHash) {
+    constructor(INounsDAOV2 _governor, string memory _ensName, bytes32 _ensNameHash) ENSHelper(_ensName, _ensNameHash) {
         governor = _governor;
     }
 
@@ -138,13 +130,7 @@ contract Alligator is IAlligator, ENSHelper {
     ) external returns (uint256 proposalId) {
         address proxy = proxyAddress(authority[0]);
         // Create a proposal first so the custom rules can validate it
-        proposalId = INounsDAOV2(proxy).propose(
-            targets,
-            values,
-            signatures,
-            calldatas,
-            description
-        );
+        proposalId = INounsDAOV2(proxy).propose(targets, values, signatures, calldatas, description);
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
@@ -315,8 +301,7 @@ contract Alligator is IAlligator, ENSHelper {
                     revert NotValidYet(from, to, rules.notValidBefore);
                 }
                 if (rules.notValidAfter != 0) {
-                    if (block.timestamp > rules.notValidAfter)
-                        revert NotValidAnymore(from, to, rules.notValidAfter);
+                    if (block.timestamp > rules.notValidAfter) revert NotValidAnymore(from, to, rules.notValidAfter);
                 }
                 if (rules.blocksBeforeVoteCloses != 0) {
                     INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
@@ -326,12 +311,8 @@ contract Alligator is IAlligator, ENSHelper {
                 }
                 if (rules.customRule != address(0)) {
                     if (
-                        IRule(rules.customRule).validate(
-                            address(governor),
-                            sender,
-                            proposalId,
-                            support
-                        ) != IRule.validate.selector
+                        IRule(rules.customRule).validate(address(governor), sender, proposalId, support) !=
+                        IRule.validate.selector
                     ) {
                         revert InvalidCustomRule(from, to, rules.customRule);
                     }
@@ -355,10 +336,7 @@ contract Alligator is IAlligator, ENSHelper {
         bytes calldata data
     ) public view returns (bytes4 magicValue) {
         if (data.length > 0) {
-            (address[] memory authority, bytes memory signature) = abi.decode(
-                data,
-                (address[], bytes)
-            );
+            (address[] memory authority, bytes memory signature) = abi.decode(data, (address[], bytes));
             address signer = ECDSA.recover(hash, signature);
             validate(signer, authority, PERMISSION_SIGN, 0, 0xFE);
             return IERC1271.isValidSignature.selector;
@@ -376,12 +354,7 @@ contract Alligator is IAlligator, ENSHelper {
                             bytes1(0xff),
                             address(this),
                             bytes32(uint256(uint160(owner))), // salt
-                            keccak256(
-                                abi.encodePacked(
-                                    type(Proxy).creationCode,
-                                    abi.encode(address(governor))
-                                )
-                            )
+                            keccak256(abi.encodePacked(type(Proxy).creationCode, abi.encode(address(governor))))
                         )
                     )
                 )
