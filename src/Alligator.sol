@@ -236,8 +236,7 @@ contract Alligator is IAlligator, ENSHelper {
 
   /// @notice Subdelegate an address with rules.
   function subDelegate(address to, Rules calldata rules) external {
-    address proxy = proxyAddress(msg.sender);
-    if (proxy.code.length == 0) {
+    if (proxyAddress(msg.sender).code.length == 0) {
       create(msg.sender);
     }
 
@@ -247,20 +246,20 @@ contract Alligator is IAlligator, ENSHelper {
 
   /// @notice Subdelegate multiple addresses with rules.
   function subDelegateBatched(address[] calldata targets, Rules[] calldata rules) external {
-    address proxy = proxyAddress(msg.sender);
-    if (proxy.code.length == 0) {
+    if (proxyAddress(msg.sender).code.length == 0) {
       create(msg.sender);
     }
 
     require(targets.length == rules.length);
     for (uint256 i; i < targets.length; ) {
       subDelegations[msg.sender][targets[i]] = rules[i];
-      emit SubDelegation(msg.sender, targets[i], rules[i]);
 
       unchecked {
         ++i;
       }
     }
+
+    emit SubDelegations(msg.sender, targets, rules);
   }
 
   // Refill Alligator's balance for gas refunds

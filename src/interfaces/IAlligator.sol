@@ -13,6 +13,7 @@ struct Rules {
 interface IAlligator {
   event ProxyDeployed(address indexed owner, address proxy);
   event SubDelegation(address indexed from, address indexed to, Rules rules);
+  event SubDelegations(address indexed from, address[] indexed to, Rules[] rules);
   event VoteCast(
     address indexed proxy,
     address indexed voter,
