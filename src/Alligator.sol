@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import './interfaces/IAlligator.sol';
-import {IGovernorBravo} from './interfaces/IGovernorBravo.sol';
 import {INounsDAOV2} from './interfaces/INounsDAOV2.sol';
 import {IRule} from './interfaces/IRule.sol';
 import {ENSHelper} from './ENSHelper.sol';
