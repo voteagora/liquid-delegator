@@ -8,3 +8,11 @@ libs = ['lib']
 optimizer = true
 optimizer_runs = 200
 # via_ir = true
+
+[rpc_endpoints]
+goerli = "${GOERLI_RPC_URL}"
+mainnet = "${MAINNET_RPC_URL}"
+
+[etherscan]
+goerli = {key = "${ETHERSCAN_API_KEY}", url = "https://api-goerli.etherscan.io/api"}
+mainnet = {key = "${ETHERSCAN_API_KEY}"}
