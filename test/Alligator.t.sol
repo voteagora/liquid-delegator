@@ -188,6 +188,7 @@ contract AlligatorTest is Test {
         assertEq(nounsDAO.totalVotes(), 2);
     }
 
+    // Run `forge test` with --gas-price param to set the gas price
     function testCastRefundableVotesWithReasonBatched() public {
         uint256 initBalance = 1 ether;
         payable(address(alligator)).transfer(initBalance);
@@ -302,6 +303,8 @@ contract AlligatorTest is Test {
 
         vm.prank(Utils.alice);
         alligator.subDelegateBatched(targets, rules, true);
+        vm.prank(Utils.bob);
+        alligator.subDelegateBatched(targets, rules, false);
 
         address aliceProxy = alligator.proxyAddress(Utils.alice);
         assertGt(aliceProxy.code.length, 0);
@@ -311,6 +314,7 @@ contract AlligatorTest is Test {
 
         (uint8 carolPermissions, , , , , ) = alligator.subDelegations(Utils.alice, Utils.carol);
         assertEq(carolPermissions, 0x02);
+        assertTrue(alligator.proxyAddress(Utils.bob).code.length == 0);
     }
 
     function testNestedSubDelegate() public {
@@ -581,10 +585,6 @@ contract AlligatorTest is Test {
         vm.expectRevert();
         IERC1271(root).isValidSignature(hash2, data);
     }
-
-    // =============================================================
-    //                          REVERT TESTS
-    // =============================================================
 
     function testRevert_castVote_validateCheck() public {
         address[] memory authority = new address[](1);
