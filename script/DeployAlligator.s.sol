@@ -36,7 +36,8 @@ contract DeployAlligatorScript is Script {
                 notValidAfter: 0,
                 blocksBeforeVoteCloses: 0,
                 customRule: address(0)
-            })
+            }),
+            true
         );
         alligator.subDelegate(
             0x1E79b045Dc29eAe9fdc69673c9DCd7C53E5E159D,
@@ -47,7 +48,8 @@ contract DeployAlligatorScript is Script {
                 notValidAfter: 0,
                 blocksBeforeVoteCloses: 0,
                 customRule: address(0)
-            })
+            }),
+            true
         );
     }
 }

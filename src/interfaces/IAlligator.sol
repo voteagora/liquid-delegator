@@ -77,9 +77,9 @@ interface IAlligator {
         bytes calldata data
     ) external view returns (bytes4 magicValue);
 
-    function subDelegate(address to, Rules calldata rules) external;
+    function subDelegate(address to, Rules calldata rules, bool createProxy) external;
 
-    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules) external;
+    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external;
 
     function validate(
         address sender,

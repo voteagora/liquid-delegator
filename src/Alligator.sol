@@ -232,9 +232,11 @@ contract Alligator is IAlligator, ENSHelper {
     }
 
     /// @notice Subdelegate an address with rules.
-    function subDelegate(address to, Rules calldata rules) external {
-        if (proxyAddress(msg.sender).code.length == 0) {
-            create(msg.sender);
+    function subDelegate(address to, Rules calldata rules, bool createProxy) external {
+        if (createProxy) {
+            if (proxyAddress(msg.sender).code.length == 0) {
+                create(msg.sender);
+            }
         }
 
         subDelegations[msg.sender][to] = rules;
@@ -242,12 +244,15 @@ contract Alligator is IAlligator, ENSHelper {
     }
 
     /// @notice Subdelegate multiple addresses with rules.
-    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules) external {
-        if (proxyAddress(msg.sender).code.length == 0) {
-            create(msg.sender);
+    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external {
+        require(targets.length == rules.length);
+
+        if (createProxy) {
+            if (proxyAddress(msg.sender).code.length == 0) {
+                create(msg.sender);
+            }
         }
 
-        require(targets.length == rules.length);
         for (uint256 i; i < targets.length; ) {
             subDelegations[msg.sender][targets[i]] = rules[i];
 
