@@ -240,6 +240,57 @@ contract AlligatorTest is Test {
         assertEq(address(alligator).balance, initBalance - refundAmount);
     }
 
+    // // Run `forge test` with --gas-price param to set the gas price
+    // // Prevent refund if proxy has 0 voting power
+    // function testCastRefundableVotesWithReasonBatched_refundCheck() public {
+    //     uint256 initBalance = 1 ether;
+    //     payable(address(alligator)).transfer(initBalance);
+
+    //     address[] memory authority1 = new address[](4);
+    //     authority1[0] = address(this);
+    //     authority1[1] = Utils.alice;
+    //     authority1[2] = Utils.bob;
+    //     authority1[3] = Utils.carol;
+
+    //     address[] memory authority2 = new address[](2);
+    //     authority2[0] = Utils.bob;
+    //     authority2[1] = Utils.carol;
+
+    //     address[][] memory authorities = new address[][](2);
+    //     authorities[0] = authority1;
+    //     authorities[1] = authority2;
+
+    //     Rules memory rules = Rules({
+    //         permissions: 0x01,
+    //         maxRedelegations: 255,
+    //         notValidBefore: 0,
+    //         notValidAfter: 0,
+    //         blocksBeforeVoteCloses: 0,
+    //         customRule: address(0)
+    //     });
+
+    //     alligator.subDelegate(Utils.alice, rules, true);
+    //     vm.prank(Utils.alice);
+    //     alligator.subDelegate(Utils.bob, rules, true);
+    //     vm.prank(Utils.bob);
+    //     alligator.subDelegate(Utils.carol, rules, true);
+
+    //     address[] memory proxies = new address[](2);
+    //     proxies[0] = alligator.proxyAddress(address(this));
+    //     proxies[1] = alligator.proxyAddress(Utils.bob);
+
+    //     uint256 refundAmount = 200000 * tx.gasprice;
+
+    //     vm.prank(Utils.carol);
+    //     alligator.castRefundableVotesWithReasonBatched{gas: 1e9}(authorities, 1, 1, "");
+
+    //     vm.prank(Utils.carol);
+    //     alligator.castRefundableVotesWithReasonBatched{gas: 1e9}(authorities, 1, 1, "");
+
+    //     assertTrue(alligator.proxyAddress(Utils.alice).code.length != 0);
+    //     assertEq(address(alligator).balance, initBalance - refundAmount);
+    // }
+
     function testSubDelegate_withProxyCreate() public {
         address[] memory authority = new address[](2);
         authority[0] = address(this);
@@ -718,6 +769,9 @@ contract NounsDAO is INounsDAOV2 {
     function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {}
 
     function castVoteWithReason(uint256 proposalId, uint8 support, string calldata) external {
+        require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
+        require(hasVoted[msg.sender] == false, "NounsDAO::castVoteInternal: voter already voted");
+
         lastVoter = msg.sender;
         lastProposalId = proposalId;
         lastSupport = support;
