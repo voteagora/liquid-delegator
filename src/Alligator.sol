@@ -190,8 +190,6 @@ contract Alligator is IAlligator, ENSHelper {
     ) external {
         uint256 startGas = gasleft();
         castVotesWithReasonBatched(authorities, proposalId, support, reason);
-        // TODO: Make sure the method call above actually resulted in new votes casted, otherwise
-        // the refund mechanism can be abused to drain the Alligator's funds
         _refundGas(startGas);
     }
 
