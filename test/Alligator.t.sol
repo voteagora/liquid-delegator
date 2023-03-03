@@ -7,6 +7,7 @@ import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import "../src/Alligator.sol";
 import "./Utils.sol";
+import "./mock/NounsDAO2Mock.sol";
 
 contract AlligatorTest is Test {
     // =============================================================
@@ -416,7 +417,7 @@ contract AlligatorTest is Test {
         );
 
         vm.prank(Utils.carol);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(NotDelegated.selector, Utils.alice, Utils.bob, PERMISSION_VOTE));
         alligator.castVote(authority, 1, 1);
     }
 
@@ -446,7 +447,7 @@ contract AlligatorTest is Test {
         alligator.subDelegate(Utils.carol, rules, true);
 
         vm.prank(Utils.carol);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(TooManyRedelegations.selector, address(this), Utils.alice));
         alligator.castVote(authority, 1, 1);
 
         address[] memory authority2 = new address[](3);
@@ -456,6 +457,79 @@ contract AlligatorTest is Test {
 
         vm.prank(Utils.bob);
         alligator.castVote(authority2, 1, 1);
+    }
+
+    function testNotValidBefore() public {
+        address[] memory authority = new address[](2);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: uint32(block.timestamp + 1e3),
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules, true);
+
+        vm.prank(Utils.alice);
+        vm.expectRevert(abi.encodeWithSelector(NotValidYet.selector, address(this), Utils.alice, rules.notValidBefore));
+        alligator.castVote(authority, 1, 1);
+    }
+
+    function testNotValidAnymore() public {
+        vm.warp(100);
+
+        address[] memory authority = new address[](2);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: uint32(block.timestamp - 10),
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules, true);
+
+        vm.prank(Utils.alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(NotValidAnymore.selector, address(this), Utils.alice, rules.notValidAfter)
+        );
+        alligator.castVote(authority, 1, 1);
+    }
+
+    function testTooEarly() public {
+        NounsDAO2Mock nounsDAO_ = new NounsDAO2Mock();
+        Alligator alligator_ = new Alligator(nounsDAO_, "", 0);
+        alligator_.create(address(this));
+
+        address[] memory authority = new address[](2);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 99,
+            customRule: address(0)
+        });
+
+        alligator_.subDelegate(Utils.alice, rules, true);
+
+        vm.prank(Utils.alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(TooEarly.selector, address(this), Utils.alice, rules.blocksBeforeVoteCloses)
+        );
+        alligator_.castVote(authority, 1, 1);
     }
 
     function testSupportsSigning() public {
@@ -540,7 +614,7 @@ contract AlligatorTest is Test {
         );
 
         vm.prank(Utils.carol);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(NotDelegated.selector, Utils.alice, Utils.bob, PERMISSION_SIGN));
         alligator.sign(authority, hash1);
         assertEq(IERC1271(root).isValidSignature(hash1, ""), bytes4(0));
     }
