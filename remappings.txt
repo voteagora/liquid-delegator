@@ -1,0 +1,7 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+base64-sol/=lib/base64/
+ds-test/=lib/forge-std/lib/ds-test/src/
+ens-contracts/=lib/ens-contracts/contracts/
+forge-std/=lib/forge-std/src/
+noun-contracts/=lib/nouns-monorepo/packages/nouns-contracts/contracts/
+create3-factory/=lib/create3-factory/src/
