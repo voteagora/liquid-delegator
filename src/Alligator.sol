@@ -109,13 +109,28 @@ contract Alligator is IAlligator, ENSHelper {
     // =============================================================
 
     /// @notice Deploy a new Proxy for an owner deterministically.
-    function create(address owner) public returns (address endpoint) {
+    function create(address owner, bool registerEnsName) public returns (address endpoint) {
         endpoint = address(new Proxy{salt: bytes32(uint256(uint160(owner)))}(address(governor)));
         emit ProxyDeployed(owner, endpoint);
 
+        if (registerEnsName) {
+            if (ensNameHash != 0) {
+                string memory reverseName = registerDeployment(endpoint);
+                Proxy(payable(endpoint)).setENSReverseRecord(reverseName);
+            }
+        }
+    }
+
+    /**
+     * @notice Register ENS name for an already deployed Proxy.
+     *
+     * @dev Reverts if the ENS name is already set.
+     */
+    function registerProxyDeployment(address owner) public {
         if (ensNameHash != 0) {
-            string memory reverseName = registerDeployment(endpoint);
-            Proxy(payable(endpoint)).setENSReverseRecord(reverseName);
+            address proxy = proxyAddress(owner);
+            string memory reverseName = registerDeployment(proxy);
+            Proxy(payable(proxy)).setENSReverseRecord(reverseName);
         }
     }
 
@@ -230,10 +245,10 @@ contract Alligator is IAlligator, ENSHelper {
     }
 
     /// @notice Subdelegate an address with rules.
-    function subDelegate(address to, Rules calldata rules, bool createProxy) external {
+    function subDelegate(address to, Rules calldata rules, bool createProxy, bool registerEnsName) external {
         if (createProxy) {
             if (proxyAddress(msg.sender).code.length == 0) {
-                create(msg.sender);
+                create(msg.sender, registerEnsName);
             }
         }
 
@@ -242,12 +257,17 @@ contract Alligator is IAlligator, ENSHelper {
     }
 
     /// @notice Subdelegate multiple addresses with rules.
-    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external {
+    function subDelegateBatched(
+        address[] calldata targets,
+        Rules[] calldata rules,
+        bool createProxy,
+        bool registerEnsName
+    ) external {
         require(targets.length == rules.length);
 
         if (createProxy) {
             if (proxyAddress(msg.sender).code.length == 0) {
-                create(msg.sender);
+                create(msg.sender, registerEnsName);
             }
         }
 

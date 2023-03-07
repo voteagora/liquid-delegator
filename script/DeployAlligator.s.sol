@@ -13,6 +13,7 @@ import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
 import {Alligator, Rules} from "../src/Alligator.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {DescriptorImageData} from "./DescriptorImageData.sol";
+import {ENSNamehash} from "../src/ENSNamehash.sol";
 
 contract DeployAlligatorScript is Script {
     function run() public returns (Alligator alligator) {
@@ -23,10 +24,11 @@ contract DeployAlligatorScript is Script {
 
         // INounsDAOV2 nounsDAO = INounsDAOV2(0xD08faCeb444dbb6b063a51C2ddFb564Fa0f8Dce0); // GOERLI
         INounsDAOV2 nounsDAO = INounsDAOV2(0x6f3E6272A167e8AcCb32072d08E0957F9c79223d); // MAINNET
+        string memory ensName = "nounsagora.eth";
+        bytes32 ensNameHash = ENSNamehash.namehash(bytes(ensName));
 
-        alligator = new Alligator{salt: salt}(nounsDAO, "", 0);
+        alligator = new Alligator{salt: salt}(nounsDAO, ensName, ensNameHash);
 
-        // TODO: set ens and investigate logic -> nounsagora.eth
         // TODO: Add admin pausable for critical ops?
 
         vm.stopBroadcast();

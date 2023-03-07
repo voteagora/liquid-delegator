@@ -7,11 +7,13 @@ import {IAddrResolver} from "ens-contracts/resolvers/profiles/IAddrResolver.sol"
 import {ENS} from "ens-contracts/registry/ENS.sol";
 
 contract ENSHelper is IERC165, IAddrResolver {
-    string public ensName;
+    error AlreadyRegistered();
 
+    string public ensName;
     bytes32 internal immutable ensNameHash;
     uint256 internal numberOfProxiesDeployed;
     mapping(bytes32 => address) public nodehashToAddress;
+    mapping(address => bool) public registeredProxyAddresses;
 
     constructor(string memory _ensName, bytes32 _ensNameHash) {
         ensNameHash = _ensNameHash;
@@ -19,7 +21,14 @@ contract ENSHelper is IERC165, IAddrResolver {
     }
 
     function registerDeployment(address _addr) internal returns (string memory reverseENSName) {
-        numberOfProxiesDeployed += 1;
+        if (registeredProxyAddresses[_addr]) {
+            revert AlreadyRegistered();
+        }
+
+        /// @dev Cannot overflow uint256 counter by incrementing 1 at a time
+        unchecked {
+            ++numberOfProxiesDeployed;
+        }
 
         string memory subdomain = Strings.toString(numberOfProxiesDeployed);
         reverseENSName = string.concat(subdomain, ".", ensName);
@@ -27,6 +36,7 @@ contract ENSHelper is IERC165, IAddrResolver {
         bytes32 label = keccak256(abi.encodePacked(subdomain));
         bytes32 namehash = keccak256(abi.encodePacked(ensNameHash, label));
         nodehashToAddress[namehash] = _addr;
+        registeredProxyAddresses[_addr] = true;
 
         ENS(0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e).setSubnodeRecord(
             ensNameHash,
