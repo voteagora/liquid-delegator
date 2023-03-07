@@ -7,9 +7,11 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
 import {IRule} from "./interfaces/IRule.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import "./interfaces/IAlligator.sol";
 
-contract Alligator is IAlligator, ENSHelper {
+contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
     // =============================================================
     //                             ERRORS
     // =============================================================
@@ -124,7 +126,7 @@ contract Alligator is IAlligator, ENSHelper {
         string[] calldata signatures,
         bytes[] calldata calldatas,
         string calldata description
-    ) external returns (uint256 proposalId) {
+    ) external whenNotPaused returns (uint256 proposalId) {
         address proxy = proxyAddress(authority[0]);
         // Create a proposal first so the custom rules can validate it
         proposalId = INounsDAOV2(proxy).propose(targets, values, signatures, calldatas, description);
@@ -138,7 +140,7 @@ contract Alligator is IAlligator, ENSHelper {
      * @param proposalId The id of the proposal to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      */
-    function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
+    function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external whenNotPaused {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
 
         address proxy = proxyAddress(authority[0]);
@@ -159,7 +161,7 @@ contract Alligator is IAlligator, ENSHelper {
         uint256 proposalId,
         uint8 support,
         string calldata reason
-    ) public {
+    ) public whenNotPaused {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
 
         address proxy = proxyAddress(authority[0]);
@@ -180,7 +182,7 @@ contract Alligator is IAlligator, ENSHelper {
         uint256 proposalId,
         uint8 support,
         string calldata reason
-    ) public {
+    ) public whenNotPaused {
         address[] memory proxies = new address[](authorities.length);
         address[] memory authority;
         for (uint256 i; i < authorities.length; ) {
@@ -211,7 +213,7 @@ contract Alligator is IAlligator, ENSHelper {
         uint256 proposalId,
         uint8 support,
         string calldata reason
-    ) external {
+    ) external whenNotPaused {
         uint256 startGas = gasleft();
         castVotesWithReasonBatched(authorities, proposalId, support, reason);
         _refundGas(startGas);
@@ -231,7 +233,7 @@ contract Alligator is IAlligator, ENSHelper {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external {
+    ) external whenNotPaused {
         bytes32 domainSeparator = keccak256(
             abi.encode(DOMAIN_TYPEHASH, keccak256("Alligator"), block.chainid, address(this))
         );
@@ -256,7 +258,7 @@ contract Alligator is IAlligator, ENSHelper {
      * @param authority The authority chain to validate against.
      * @param hash The hash to sign.
      */
-    function sign(address[] calldata authority, bytes32 hash) external {
+    function sign(address[] calldata authority, bytes32 hash) external whenNotPaused {
         validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
 
         address proxy = proxyAddress(authority[0]);
@@ -316,6 +318,19 @@ contract Alligator is IAlligator, ENSHelper {
         emit SubDelegations(msg.sender, targets, rules);
     }
 
+    /**
+     * @notice Pauses and unpauses propose, vote and sign operations.
+     *
+     * @dev Only contract owner can toggle pause.
+     */
+    function _togglePause() external onlyOwner {
+        if (!paused()) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
     // Refill Alligator's balance for gas refunds
     receive() external payable {}
 
@@ -330,7 +345,7 @@ contract Alligator is IAlligator, ENSHelper {
      * @param authority The authority chain to validate against.
      * @param permissions The permissions to validate.
      * @param proposalId The id of the proposal for which validation is being performed.
-     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain, 0xFF=proposal
      */
     function validate(
         address sender,
