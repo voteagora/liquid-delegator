@@ -298,6 +298,21 @@ contract AlligatorTest is Test {
     //     assertEq(address(alligator).balance, initBalance - refundAmount);
     // }
 
+    function testPropose() public {
+        address[] memory authority = new address[](1);
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        string[] memory signatures = new string[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        authority[0] = address(this);
+        targets[0] = address(1);
+        values[0] = 1;
+        signatures[0] = "";
+        calldatas[0] = "";
+
+        alligator.propose(authority, targets, values, signatures, calldatas, "");
+    }
+
     function testSubDelegate_withProxyCreate() public {
         address[] memory authority = new address[](2);
         authority[0] = address(this);
@@ -480,117 +495,6 @@ contract AlligatorTest is Test {
         alligator.castVote(authority, 1, 1);
     }
 
-    function testMaxRedelegations() public {
-        address[] memory authority = new address[](4);
-        authority[0] = address(this);
-        authority[1] = Utils.alice;
-        authority[2] = Utils.bob;
-        authority[3] = Utils.carol;
-
-        Rules memory rules = Rules({
-            permissions: 0x01,
-            maxRedelegations: 1,
-            notValidBefore: 0,
-            notValidAfter: 0,
-            blocksBeforeVoteCloses: 0,
-            customRule: address(0)
-        });
-
-        alligator.subDelegate(Utils.alice, rules, true, true);
-        vm.prank(Utils.alice);
-
-        rules.maxRedelegations = 255;
-
-        alligator.subDelegate(Utils.bob, rules, true, true);
-        vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
-
-        vm.prank(Utils.carol);
-        vm.expectRevert(abi.encodeWithSelector(TooManyRedelegations.selector, address(this), Utils.alice));
-        alligator.castVote(authority, 1, 1);
-
-        address[] memory authority2 = new address[](3);
-        authority2[0] = address(this);
-        authority2[1] = Utils.alice;
-        authority2[2] = Utils.bob;
-
-        vm.prank(Utils.bob);
-        alligator.castVote(authority2, 1, 1);
-    }
-
-    function testNotValidBefore() public {
-        address[] memory authority = new address[](2);
-        authority[0] = address(this);
-        authority[1] = Utils.alice;
-
-        Rules memory rules = Rules({
-            permissions: 0x01,
-            maxRedelegations: 1,
-            notValidBefore: uint32(block.timestamp + 1e3),
-            notValidAfter: 0,
-            blocksBeforeVoteCloses: 0,
-            customRule: address(0)
-        });
-
-        alligator.subDelegate(Utils.alice, rules, true, true);
-
-        vm.prank(Utils.alice);
-        vm.expectRevert(abi.encodeWithSelector(NotValidYet.selector, address(this), Utils.alice, rules.notValidBefore));
-        alligator.castVote(authority, 1, 1);
-    }
-
-    function testNotValidAnymore() public {
-        vm.warp(100);
-
-        address[] memory authority = new address[](2);
-        authority[0] = address(this);
-        authority[1] = Utils.alice;
-
-        Rules memory rules = Rules({
-            permissions: 0x01,
-            maxRedelegations: 1,
-            notValidBefore: 0,
-            notValidAfter: uint32(block.timestamp - 10),
-            blocksBeforeVoteCloses: 0,
-            customRule: address(0)
-        });
-
-        alligator.subDelegate(Utils.alice, rules, true, true);
-
-        vm.prank(Utils.alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(NotValidAnymore.selector, address(this), Utils.alice, rules.notValidAfter)
-        );
-        alligator.castVote(authority, 1, 1);
-    }
-
-    function testTooEarly() public {
-        NounsDAO2Mock nounsDAO_ = new NounsDAO2Mock();
-        Alligator alligator_ = new Alligator(nounsDAO_, "", 0);
-        alligator_.create(address(this), true);
-
-        address[] memory authority = new address[](2);
-        authority[0] = address(this);
-        authority[1] = Utils.alice;
-
-        Rules memory rules = Rules({
-            permissions: 0x01,
-            maxRedelegations: 1,
-            notValidBefore: 0,
-            notValidAfter: 0,
-            blocksBeforeVoteCloses: 99,
-            customRule: address(0)
-        });
-
-        alligator_.subDelegate(Utils.alice, rules, true, true);
-
-        vm.prank(Utils.alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(TooEarly.selector, address(this), Utils.alice, rules.blocksBeforeVoteCloses)
-        );
-        alligator_.castVote(authority, 1, 1);
-    }
-
     function testSupportsSigning() public {
         bytes32 hash1 = keccak256(abi.encodePacked("pass"));
         bytes32 hash2 = keccak256(abi.encodePacked("fail"));
@@ -720,6 +624,40 @@ contract AlligatorTest is Test {
         IERC1271(root).isValidSignature(hash2, data);
     }
 
+    function testPause() public {
+        address[] memory authority = new address[](1);
+        address[][] memory authorities = new address[][](1);
+        address[] memory targets = new address[](1);
+        uint256[] memory values = new uint256[](1);
+        string[] memory signatures = new string[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        authority[0] = address(this);
+        authorities[0] = authority;
+        targets[0] = address(1);
+        values[0] = 1;
+        signatures[0] = "";
+        calldatas[0] = "";
+
+        alligator._togglePause();
+
+        vm.expectRevert("Pausable: paused");
+        alligator.castVote(authority, 1, 1);
+        vm.expectRevert("Pausable: paused");
+        alligator.castVoteWithReason(authority, 1, 1, "reason");
+        vm.expectRevert("Pausable: paused");
+        alligator.castVotesWithReasonBatched(authorities, 1, 1, "");
+        vm.expectRevert("Pausable: paused");
+        alligator.castRefundableVotesWithReasonBatched{gas: 1e9}(authorities, 1, 1, "");
+        vm.expectRevert("Pausable: paused");
+        alligator.propose(authority, targets, values, signatures, calldatas, "");
+        vm.expectRevert("Pausable: paused");
+        alligator.sign(authority, keccak256(abi.encodePacked("test")));
+    }
+
+    // =============================================================
+    //                           REVERTS
+    // =============================================================
+
     function testRevert_castVote_validateCheck() public {
         address[] memory authority = new address[](1);
         authority[0] = address(this);
@@ -734,6 +672,123 @@ contract AlligatorTest is Test {
         vm.prank(address(1));
         vm.expectRevert(abi.encodeWithSelector(NotDelegated.selector, address(this), address(1), PERMISSION_VOTE));
         alligator.castVoteWithReason(authority, 1, 1, "reason");
+    }
+
+    function testRevert_validate_MaxRedelegations() public {
+        address[] memory authority = new address[](4);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+        authority[2] = Utils.bob;
+        authority[3] = Utils.carol;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules, true, true);
+        vm.prank(Utils.alice);
+
+        rules.maxRedelegations = 255;
+
+        alligator.subDelegate(Utils.bob, rules, true, true);
+        vm.prank(Utils.bob);
+        alligator.subDelegate(Utils.carol, rules, true, true);
+
+        vm.prank(Utils.carol);
+        vm.expectRevert(abi.encodeWithSelector(TooManyRedelegations.selector, address(this), Utils.alice));
+        alligator.castVote(authority, 1, 1);
+
+        address[] memory authority2 = new address[](3);
+        authority2[0] = address(this);
+        authority2[1] = Utils.alice;
+        authority2[2] = Utils.bob;
+
+        vm.prank(Utils.bob);
+        alligator.castVote(authority2, 1, 1);
+    }
+
+    function testRevert_validate_NotValidBefore() public {
+        address[] memory authority = new address[](2);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: uint32(block.timestamp + 1e3),
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules, true, true);
+
+        vm.prank(Utils.alice);
+        vm.expectRevert(abi.encodeWithSelector(NotValidYet.selector, address(this), Utils.alice, rules.notValidBefore));
+        alligator.castVote(authority, 1, 1);
+    }
+
+    function testRevert_validate_NotValidAnymore() public {
+        vm.warp(100);
+
+        address[] memory authority = new address[](2);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: uint32(block.timestamp - 10),
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(Utils.alice, rules, true, true);
+
+        vm.prank(Utils.alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(NotValidAnymore.selector, address(this), Utils.alice, rules.notValidAfter)
+        );
+        alligator.castVote(authority, 1, 1);
+    }
+
+    function testRevert_validate_TooEarly() public {
+        NounsDAO2Mock nounsDAO_ = new NounsDAO2Mock();
+        Alligator alligator_ = new Alligator(nounsDAO_, "", 0);
+        alligator_.create(address(this), true);
+
+        address[] memory authority = new address[](2);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 99,
+            customRule: address(0)
+        });
+
+        alligator_.subDelegate(Utils.alice, rules, true, true);
+
+        vm.prank(Utils.alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(TooEarly.selector, address(this), Utils.alice, rules.blocksBeforeVoteCloses)
+        );
+        alligator_.castVote(authority, 1, 1);
+    }
+
+    function testRevert_togglePause_notOwner() public {
+        vm.prank(address(1));
+        vm.expectRevert("Ownable: caller is not the owner");
+        alligator._togglePause();
     }
 }
 
