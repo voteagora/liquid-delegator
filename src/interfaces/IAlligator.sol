@@ -24,7 +24,9 @@ interface IAlligator {
     event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
-    function create(address owner) external returns (address endpoint);
+    function create(address owner, bool registerEnsName) external returns (address endpoint);
+
+    function registerProxyDeployment(address owner) external;
 
     function proxyAddress(address owner) external view returns (address endpoint);
 
@@ -77,9 +79,14 @@ interface IAlligator {
         bytes calldata data
     ) external view returns (bytes4 magicValue);
 
-    function subDelegate(address to, Rules calldata rules, bool createProxy) external;
+    function subDelegate(address to, Rules calldata rules, bool createProxy, bool registerEnsName) external;
 
-    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external;
+    function subDelegateBatched(
+        address[] calldata targets,
+        Rules[] calldata rules,
+        bool createProxy,
+        bool registerEnsName
+    ) external;
 
     function validate(
         address sender,
