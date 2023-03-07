@@ -120,3 +120,7 @@ From the Governor's perspective, it looks like users `0xAAA's proxy` and `0xFFF'
 ## Attack surface
 
 Alligator does not hold user's tokens, so it's not possible to steal the tokens using a potential bug in the contract. However, it controls voting power which can be abused to vote on malicious proposals (e.g. transfer all the treasury tokens to evil.eth).
+
+## Credits
+
+This work is a continuation of [Alligator V1 made by w1nt3r](https://github.com/w1nt3r-eth/liquid-delegator)
