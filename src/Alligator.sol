@@ -108,7 +108,14 @@ contract Alligator is IAlligator, ENSHelper {
     //                       WRITE FUNCTIONS
     // =============================================================
 
-    /// @notice Deploy a new Proxy for an owner deterministically.
+    /**
+     * @notice Deploy a new Proxy for an owner deterministically.
+     *
+     * @param owner The owner of the Proxy.
+     * @param registerEnsName Whether to register the ENS name for the Proxy.
+     *
+     * @return endpoint Address of the Proxy
+     */
     function create(address owner, bool registerEnsName) public returns (address endpoint) {
         endpoint = address(new Proxy{salt: bytes32(uint256(uint160(owner)))}(address(governor)));
         emit ProxyDeployed(owner, endpoint);
@@ -124,6 +131,8 @@ contract Alligator is IAlligator, ENSHelper {
     /**
      * @notice Register ENS name for an already deployed Proxy.
      *
+     * @param owner The owner of the Proxy.
+     *
      * @dev Reverts if the ENS name is already set.
      */
     function registerProxyDeployment(address owner) public {
@@ -134,7 +143,18 @@ contract Alligator is IAlligator, ENSHelper {
         }
     }
 
-    /// @notice Validate subdelegation rules and make a proposal to the governor.
+    /**
+     * @notice Validate subdelegation rules and make a proposal to the governor.
+     *
+     * @param authority The authority chain to validate against.
+     * @param targets Target addresses for proposal calls
+     * @param values Eth values for proposal calls
+     * @param signatures Function signatures for proposal calls
+     * @param calldatas Calldatas for proposal calls
+     * @param description String description of the proposal
+     *
+     * @return proposalId Proposal id of new proposal
+     */
     function propose(
         address[] calldata authority,
         address[] calldata targets,
@@ -149,7 +169,13 @@ contract Alligator is IAlligator, ENSHelper {
         validate(msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
-    /// @notice Validate subdelegation rules and cast a vote on the governor.
+    /**
+     * @notice Validate subdelegation rules and cast a vote on the governor.
+     *
+     * @param authority The authority chain to validate against.
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     */
     function castVote(address[] calldata authority, uint256 proposalId, uint8 support) external {
         validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
 
@@ -158,7 +184,14 @@ contract Alligator is IAlligator, ENSHelper {
         emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
 
-    /// @notice Validate subdelegation rules and cast a vote with reason on the governor.
+    /**
+     * @notice Validate subdelegation rules and cast a vote with reason on the governor.
+     *
+     * @param authority The authority chain to validate against.
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param reason The reason given for the vote by the voter
+     */
     function castVoteWithReason(
         address[] calldata authority,
         uint256 proposalId,
@@ -172,7 +205,14 @@ contract Alligator is IAlligator, ENSHelper {
         emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
 
-    /// @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
+    /**
+     * @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
+     *
+     * @param authorities The authority chains to validate against.
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param reason The reason given for the vote by the voter
+     */
     function castVotesWithReasonBatched(
         address[][] calldata authorities,
         uint256 proposalId,
@@ -195,7 +235,14 @@ contract Alligator is IAlligator, ENSHelper {
         emit VotesCast(proxies, msg.sender, authorities, proposalId, support);
     }
 
-    /// @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
+    /**
+     * @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
+     *
+     * @param authorities The authority chains to validate against.
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param reason The reason given for the vote by the voter
+     */
     /// Refunds the gas used to cast the votes, if possible.
     function castRefundableVotesWithReasonBatched(
         address[][] calldata authorities,
@@ -208,7 +255,13 @@ contract Alligator is IAlligator, ENSHelper {
         _refundGas(startGas);
     }
 
-    /// @notice Validate subdelegation rules and cast a vote by signature on the governor.
+    /**
+     * @notice Validate subdelegation rules and cast a vote by signature on the governor.
+     *
+     * @param authority The authority chain to validate against.
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     */
     function castVoteBySig(
         address[] calldata authority,
         uint256 proposalId,
@@ -235,7 +288,12 @@ contract Alligator is IAlligator, ENSHelper {
         emit VoteCast(proxy, signatory, authority, proposalId, support);
     }
 
-    /// @notice Validate subdelegation rules and sign a hash.
+    /**
+     * @notice Validate subdelegation rules and sign a hash.
+     *
+     * @param authority The authority chain to validate against.
+     * @param hash The hash to sign.
+     */
     function sign(address[] calldata authority, bytes32 hash) external {
         validate(msg.sender, authority, PERMISSION_SIGN, 0, 0xFE);
 
@@ -244,7 +302,14 @@ contract Alligator is IAlligator, ENSHelper {
         emit Signed(proxy, authority, hash);
     }
 
-    /// @notice Subdelegate an address with rules.
+    /**
+     * @notice Subdelegate an address with rules.
+     *
+     * @param to The address to subdelegate to.
+     * @param rules The rules to apply to the subdelegation.
+     * @param createProxy Whether to create a Proxy for the sender, if one doesn't exist.
+     * @param registerEnsName Whether to register an ENS name for the Proxy, if one doesn't exist.
+     */
     function subDelegate(address to, Rules calldata rules, bool createProxy, bool registerEnsName) external {
         if (createProxy) {
             if (proxyAddress(msg.sender).code.length == 0) {
@@ -256,7 +321,14 @@ contract Alligator is IAlligator, ENSHelper {
         emit SubDelegation(msg.sender, to, rules);
     }
 
-    /// @notice Subdelegate multiple addresses with rules.
+    /**
+     * @notice Subdelegate multiple addresses with rules.
+     *
+     * @param targets The addresses to subdelegate to.
+     * @param rules The rules to apply to the subdelegations.
+     * @param createProxy Whether to create a Proxy for the sender, if one doesn't exist.
+     * @param registerEnsName Whether to register an ENS name for the Proxy, if one doesn't exist.
+     */
     function subDelegateBatched(
         address[] calldata targets,
         Rules[] calldata rules,
@@ -289,7 +361,15 @@ contract Alligator is IAlligator, ENSHelper {
     //                         VIEW FUNCTIONS
     // =============================================================
 
-    /// @notice Validate subdelegation rules.
+    /**
+     * @notice Validate subdelegation rules.
+     *
+     * @param sender The sender address to validate.
+     * @param authority The authority chain to validate against.
+     * @param permissions The permissions to validate.
+     * @param proposalId The id of the proposal for which validation is being performed.
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     */
     function validate(
         address sender,
         address[] memory authority,
@@ -352,7 +432,15 @@ contract Alligator is IAlligator, ENSHelper {
         revert NotDelegated(from, sender, permissions);
     }
 
-    /// @notice Returns the `IERC1271.isValidSignature` if signature is valid, or 0 if not.
+    /**
+     * @notice Checks if proxy signature is valid.
+     *
+     * @param proxy The address of the proxy contract.
+     * @param hash The hash to validate.
+     * @param data The data to validate.
+     *
+     * @return magicValue `IERC1271.isValidSignature` if signature is valid, or 0 if not.
+     */
     function isValidProxySignature(
         address proxy,
         bytes32 hash,
@@ -367,7 +455,13 @@ contract Alligator is IAlligator, ENSHelper {
         return validSignatures[proxy][hash] ? IERC1271.isValidSignature.selector : bytes4(0);
     }
 
-    /// @notice Returns the address of the proxy contract for a given owner
+    /**
+     * @notice Returns the address of the proxy contract for a given owner
+     *
+     * @param owner The owner of the Proxy.
+     *
+     * @return endpoint The address of the Proxy.
+     */
     function proxyAddress(address owner) public view returns (address endpoint) {
         endpoint = address(
             uint160(
