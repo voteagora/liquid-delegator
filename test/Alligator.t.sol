@@ -131,11 +131,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         address[] memory proxies = new address[](2);
         proxies[0] = alligator.proxyAddress(address(this));
@@ -175,11 +175,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, false, true);
+        alligator.subDelegate(Utils.alice, rules, false);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, false, true);
+        alligator.subDelegate(Utils.bob, rules, false);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         address[] memory proxies = new address[](2);
         proxies[0] = alligator.proxyAddress(address(this));
@@ -224,11 +224,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         address[] memory proxies = new address[](2);
         proxies[0] = alligator.proxyAddress(address(this));
@@ -276,11 +276,11 @@ contract AlligatorTest is Test {
     //         customRule: address(0)
     //     });
 
-    //     alligator.subDelegate(Utils.alice, rules, true, true);
+    //     alligator.subDelegate(Utils.alice, rules, true);
     //     vm.prank(Utils.alice);
-    //     alligator.subDelegate(Utils.bob, rules, true, true);
+    //     alligator.subDelegate(Utils.bob, rules, true);
     //     vm.prank(Utils.bob);
-    //     alligator.subDelegate(Utils.carol, rules, true, true);
+    //     alligator.subDelegate(Utils.carol, rules, true);
 
     //     address[] memory proxies = new address[](2);
     //     proxies[0] = alligator.proxyAddress(address(this));
@@ -327,11 +327,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
         alligator.castVote(authority, 1, 1);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
 
         assertTrue(alligator.proxyAddress(Utils.alice).code.length != 0);
         assertEq(nounsDAO.lastVoter(), root);
@@ -348,7 +348,7 @@ contract AlligatorTest is Test {
         });
 
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, false, true);
+        alligator.subDelegate(Utils.bob, rules, false);
         assertTrue(alligator.proxyAddress(Utils.alice).code.length == 0);
     }
 
@@ -376,9 +376,9 @@ contract AlligatorTest is Test {
         });
 
         vm.prank(Utils.alice);
-        alligator.subDelegateBatched(targets, rules, true, true);
+        alligator.subDelegateBatched(targets, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegateBatched(targets, rules, false, true);
+        alligator.subDelegateBatched(targets, rules, false);
 
         address aliceProxy = alligator.proxyAddress(Utils.alice);
         assertGt(aliceProxy.code.length, 0);
@@ -407,11 +407,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         vm.prank(Utils.carol);
         alligator.castVote(authority, 1, 1);
@@ -438,11 +438,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         vm.prank(Utils.carol);
         alligator.castVote(authority, 1, 1);
@@ -469,11 +469,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         vm.prank(Utils.alice);
         alligator.subDelegate(
@@ -486,7 +486,6 @@ contract AlligatorTest is Test {
                 blocksBeforeVoteCloses: 0,
                 customRule: address(0)
             }),
-            true,
             true
         );
 
@@ -527,11 +526,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         vm.prank(Utils.carol);
         alligator.sign(authority, hash1);
@@ -556,11 +555,11 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         vm.prank(Utils.alice);
         alligator.subDelegate(
@@ -573,7 +572,6 @@ contract AlligatorTest is Test {
                 blocksBeforeVoteCloses: 0,
                 customRule: address(0)
             }),
-            true,
             true
         );
 
@@ -605,13 +603,13 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
         vm.prank(Utils.carol);
-        alligator.subDelegate(signer, rules, true, true);
+        alligator.subDelegate(signer, rules, true);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash1);
         bytes memory signature = abi.encodePacked(r, s, v);
@@ -690,14 +688,14 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
         vm.prank(Utils.alice);
 
         rules.maxRedelegations = 255;
 
-        alligator.subDelegate(Utils.bob, rules, true, true);
+        alligator.subDelegate(Utils.bob, rules, true);
         vm.prank(Utils.bob);
-        alligator.subDelegate(Utils.carol, rules, true, true);
+        alligator.subDelegate(Utils.carol, rules, true);
 
         vm.prank(Utils.carol);
         vm.expectRevert(abi.encodeWithSelector(TooManyRedelegations.selector, address(this), Utils.alice));
@@ -726,7 +724,7 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
 
         vm.prank(Utils.alice);
         vm.expectRevert(abi.encodeWithSelector(NotValidYet.selector, address(this), Utils.alice, rules.notValidBefore));
@@ -749,7 +747,7 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator.subDelegate(Utils.alice, rules, true, true);
+        alligator.subDelegate(Utils.alice, rules, true);
 
         vm.prank(Utils.alice);
         vm.expectRevert(
@@ -776,7 +774,7 @@ contract AlligatorTest is Test {
             customRule: address(0)
         });
 
-        alligator_.subDelegate(Utils.alice, rules, true, true);
+        alligator_.subDelegate(Utils.alice, rules, true);
 
         vm.prank(Utils.alice);
         vm.expectRevert(

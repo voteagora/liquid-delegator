@@ -272,12 +272,11 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
      * @param to The address to subdelegate to.
      * @param rules The rules to apply to the subdelegation.
      * @param createProxy Whether to create a Proxy for the sender, if one doesn't exist.
-     * @param registerEnsName Whether to register an ENS name for the Proxy, if one doesn't exist.
      */
-    function subDelegate(address to, Rules calldata rules, bool createProxy, bool registerEnsName) external {
+    function subDelegate(address to, Rules calldata rules, bool createProxy) external {
         if (createProxy) {
             if (proxyAddress(msg.sender).code.length == 0) {
-                create(msg.sender, registerEnsName);
+                create(msg.sender, false);
             }
         }
 
@@ -291,19 +290,13 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
      * @param targets The addresses to subdelegate to.
      * @param rules The rules to apply to the subdelegations.
      * @param createProxy Whether to create a Proxy for the sender, if one doesn't exist.
-     * @param registerEnsName Whether to register an ENS name for the Proxy, if one doesn't exist.
      */
-    function subDelegateBatched(
-        address[] calldata targets,
-        Rules[] calldata rules,
-        bool createProxy,
-        bool registerEnsName
-    ) external {
+    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external {
         require(targets.length == rules.length);
 
         if (createProxy) {
             if (proxyAddress(msg.sender).code.length == 0) {
-                create(msg.sender, registerEnsName);
+                create(msg.sender, false);
             }
         }
 
