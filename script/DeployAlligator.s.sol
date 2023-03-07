@@ -13,7 +13,7 @@ import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
 import {Alligator, Rules} from "../src/Alligator.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {DescriptorImageData} from "./DescriptorImageData.sol";
-import {ENSNamehash} from "../src/ENSNamehash.sol";
+import {ENSNamehash} from "../src/utils/ENSNamehash.sol";
 
 contract DeployAlligatorScript is Script {
     function run() public returns (Alligator alligator) {

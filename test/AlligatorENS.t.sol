@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {ENS} from "ens-contracts/registry/ENS.sol";
-import {ENSNamehash} from "../src/ENSNamehash.sol";
+import {ENSNamehash} from "../src/utils/ENSNamehash.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import "../src/Alligator.sol";

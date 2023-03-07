@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
-import {IRule} from "./interfaces/IRule.sol";
+import {INounsDAOV2} from "../interfaces/INounsDAOV2.sol";
+import {IRule} from "../interfaces/IRule.sol";
 
 contract OnlyEthLessThan100 is IRule {
     function validate(
