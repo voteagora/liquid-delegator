@@ -18,7 +18,8 @@ import {ENSNamehash} from "../src/ENSNamehash.sol";
 contract DeployAlligatorScript is Script {
     function run() public returns (Alligator alligator) {
         bytes32 salt = keccak256(bytes(vm.envString("SALT")));
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // 0x0699919b235555Be219552912D4a992774e7FB2b
+        address owner; // TODO: Add owner
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -29,7 +30,9 @@ contract DeployAlligatorScript is Script {
 
         alligator = new Alligator{salt: salt}(nounsDAO, ensName, ensNameHash);
 
-        // TODO: Add admin pausable for critical ops?
+        if (owner != address(0)) {
+            alligator.transferOwnership(owner);
+        }
 
         vm.stopBroadcast();
     }
