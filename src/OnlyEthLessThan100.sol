@@ -7,9 +7,9 @@ import {IRule} from "./interfaces/IRule.sol";
 contract OnlyEthLessThan100 is IRule {
     function validate(
         address governor,
-        address voter,
+        address, // voter
         uint256 proposalId,
-        uint8 support
+        uint8 // support
     ) external view override returns (bytes4) {
         // TODO: Should we allow vetoing proposals with total eth > 100?
 

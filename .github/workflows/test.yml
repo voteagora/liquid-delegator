@@ -46,12 +46,12 @@ jobs:
       # - name: Check contract sizes
       #   run: forge build --sizes
 
-      - name: Check gas snapshots
-        env:
-          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
-        run: forge snapshot --check
-
       - name: Run tests
         env:
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
         run: forge test --force --optimize -vvv
+
+      - name: Check gas snapshots
+        env:
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+        run: forge snapshot --check

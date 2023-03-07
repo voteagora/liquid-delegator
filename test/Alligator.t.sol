@@ -80,7 +80,7 @@ contract AlligatorTest is Test {
     function testCreate() public {
         address computedAddress = alligator.proxyAddress(Utils.alice);
         assertTrue(computedAddress.code.length == 0);
-        address proxy = alligator.create(Utils.alice, true);
+        alligator.create(Utils.alice, true);
         assertTrue(computedAddress.code.length != 0);
     }
 

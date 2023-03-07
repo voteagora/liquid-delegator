@@ -54,7 +54,7 @@ contract NounsDAO2Mock is INounsDAOV2 {
 
     function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external {}
 
-    function proposals(uint256 proposalId) external view returns (ProposalCondensed memory proposalCondensed) {
+    function proposals(uint256) external view returns (ProposalCondensed memory proposalCondensed) {
         proposalCondensed.endBlock = block.number + 100;
     }
 
