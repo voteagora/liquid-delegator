@@ -14,9 +14,6 @@
 	path = lib/ens-contracts
 	url = https://github.com/ensdomains/ens-contracts
 	branch = v0.0.19
-[submodule "lib/create3-factory"]
-	path = lib/create3-factory
-	url = https://github.com/zeframlou/create3-factory
 [submodule "lib/nouns-monorepo"]
 	path = lib/nouns-monorepo
 	url = https://github.com/nounsDAO/nouns-monorepo
