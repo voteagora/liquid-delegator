@@ -4,6 +4,10 @@ pragma solidity ^0.8.13;
 import "../structs/Rules.sol";
 
 interface IAlligator {
+    // =============================================================
+    //                             EVENTS
+    // =============================================================
+
     event ProxyDeployed(address indexed owner, address proxy);
     event SubDelegation(address indexed from, address indexed to, Rules rules);
     event SubDelegations(address indexed from, address[] to, Rules[] rules);
@@ -24,11 +28,13 @@ interface IAlligator {
     event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
+    // =============================================================
+    //                       WRITE FUNCTIONS
+    // =============================================================
+
     function create(address owner, bool registerEnsName) external returns (address endpoint);
 
     function registerProxyDeployment(address owner) external;
-
-    function proxyAddress(address owner) external view returns (address endpoint);
 
     function propose(
         address[] calldata authority,
@@ -73,21 +79,29 @@ interface IAlligator {
 
     function sign(address[] calldata authority, bytes32 hash) external;
 
+    function subDelegate(address to, Rules calldata rules, bool createProxy) external;
+
+    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external;
+
+    function _togglePause() external;
+
+    // // =============================================================
+    // //                         VIEW FUNCTIONS
+    // // =============================================================
+
+    function validate(
+        address sender,
+        address[] memory authority,
+        uint256 permissions,
+        uint256 proposalId,
+        uint256 support
+    ) external view;
+
     function isValidProxySignature(
         address proxy,
         bytes32 hash,
         bytes calldata data
     ) external view returns (bytes4 magicValue);
 
-    function subDelegate(address to, Rules calldata rules, bool createProxy) external;
-
-    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external;
-
-    function validate(
-        address sender,
-        address[] memory authority,
-        uint8 permissions,
-        uint256 proposalId,
-        uint8 support
-    ) external view;
+    function proxyAddress(address owner) external view returns (address endpoint);
 }
