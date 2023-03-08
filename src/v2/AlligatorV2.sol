@@ -180,9 +180,9 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         uint8 support,
         string calldata reason
     ) public whenNotPaused {
-        address proxy = proxyAddress(authority[0], proxyRules);
-
         validate(proxyRules, msg.sender, authority, PERMISSION_VOTE, proposalId, support);
+
+        address proxy = proxyAddress(authority[0], proxyRules);
         INounsDAOV2(proxy).castVoteWithReason(proposalId, support, reason);
         emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
