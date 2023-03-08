@@ -11,12 +11,12 @@ contract ProxyV2 is IERC1271 {
     address internal immutable governor;
 
     // Rules
-    uint256 public immutable permissions;
-    uint256 public immutable maxRedelegations;
-    uint256 public immutable notValidBefore;
-    uint256 public immutable notValidAfter;
-    uint256 public immutable blocksBeforeVoteCloses;
-    address public immutable customRule;
+    uint256 internal immutable permissions;
+    uint256 internal immutable maxRedelegations;
+    uint256 internal immutable notValidBefore;
+    uint256 internal immutable notValidAfter;
+    uint256 internal immutable blocksBeforeVoteCloses;
+    address internal immutable customRule;
 
     constructor(
         address _governor,
