@@ -17,11 +17,11 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
     // =============================================================
 
     error BadSignature();
-    error NotDelegated(address from, address to, uint8 requiredPermissions);
+    error NotDelegated(address from, address to, uint256 requiredPermissions);
     error TooManyRedelegations(address from, address to);
-    error NotValidYet(address from, address to, uint32 willBeValidFrom);
-    error NotValidAnymore(address from, address to, uint32 wasValidUntil);
-    error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
+    error NotValidYet(address from, address to, uint256 willBeValidFrom);
+    error NotValidAnymore(address from, address to, uint256 wasValidUntil);
+    error TooEarly(address from, address to, uint256 blocksBeforeVoteCloses);
     error InvalidCustomRule(address from, address to, address customRule);
 
     // =============================================================
@@ -201,13 +201,13 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
 
     /**
      * @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
+     * Refunds the gas used to cast the votes, if possible.
      *
      * @param authorities The authority chains to validate against.
      * @param proposalId The id of the proposal to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      * @param reason The reason given for the vote by the voter
      */
-    /// Refunds the gas used to cast the votes, if possible.
     function castRefundableVotesWithReasonBatched(
         address[][] calldata authorities,
         uint256 proposalId,
@@ -343,9 +343,9 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
     function validate(
         address sender,
         address[] memory authority,
-        uint8 permissions,
+        uint256 permissions,
         uint256 proposalId,
-        uint8 support
+        uint256 support
     ) public view {
         address from = authority[0];
 
@@ -384,7 +384,7 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
                 }
                 if (rules.customRule != address(0)) {
                     if (
-                        IRule(rules.customRule).validate(address(governor), sender, proposalId, support) !=
+                        IRule(rules.customRule).validate(address(governor), sender, proposalId, uint8(support)) !=
                         IRule.validate.selector
                     ) {
                         revert InvalidCustomRule(from, to, rules.customRule);
