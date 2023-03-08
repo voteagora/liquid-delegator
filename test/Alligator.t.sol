@@ -15,11 +15,11 @@ contract AlligatorTest is Test {
     // =============================================================
 
     error BadSignature();
-    error NotDelegated(address from, address to, uint8 requiredPermissions);
+    error NotDelegated(address from, address to, uint256 requiredPermissions);
     error TooManyRedelegations(address from, address to);
-    error NotValidYet(address from, address to, uint32 willBeValidFrom);
-    error NotValidAnymore(address from, address to, uint32 wasValidUntil);
-    error TooEarly(address from, address to, uint32 blocksBeforeVoteCloses);
+    error NotValidYet(address from, address to, uint256 willBeValidFrom);
+    error NotValidAnymore(address from, address to, uint256 wasValidUntil);
+    error TooEarly(address from, address to, uint256 blocksBeforeVoteCloses);
     error InvalidCustomRule(address from, address to, address customRule);
 
     event ProxyDeployed(address indexed owner, address proxy);
