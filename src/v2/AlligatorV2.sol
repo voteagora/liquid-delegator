@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.19;
 
 import {ProxyV2} from "./ProxyV2.sol";
 import {ENSHelper} from "../utils/ENSHelper.sol";
@@ -55,10 +55,12 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     //                        MUTABLE STORAGE
     // =============================================================
 
-    // From => To => Rules
-    mapping(address => mapping(address => Rules)) public subDelegations;
-    // Proxy address => hash => valid boolean
-    mapping(address => mapping(bytes32 => bool)) internal validSignatures;
+    mapping(address from => mapping(address to => Rules subDelegationRules)) public subDelegations;
+
+    mapping(bytes32 proxyRules => mapping(address from => mapping(address to => Rules subDelegationRules)))
+        public subDelegationsProxy;
+
+    mapping(address proxyAddress => mapping(bytes32 hashSig => bool isSignatureValid)) internal validSignatures;
 
     // =============================================================
     //                         CONSTRUCTOR
