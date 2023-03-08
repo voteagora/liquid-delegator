@@ -19,7 +19,7 @@ contract DeployAlligatorScript is Script {
     function run() public returns (Alligator alligator) {
         bytes32 salt = keccak256(bytes(vm.envString("SALT")));
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // 0x0699919b235555Be219552912D4a992774e7FB2b
-        address owner; // TODO: Add owner
+        address owner = 0x75a3A0d9e5aa246976e8B5775b224Efb3f9b2f9e;
 
         vm.startBroadcast(deployerPrivateKey);
 
