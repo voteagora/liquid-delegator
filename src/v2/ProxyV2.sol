@@ -18,16 +18,24 @@ contract ProxyV2 is IERC1271 {
     uint256 public immutable blocksBeforeVoteCloses;
     address public immutable customRule;
 
-    constructor(address _governor, Rules memory _rules) {
+    constructor(
+        address _governor,
+        uint256 _permissions,
+        uint256 _maxRedelegations,
+        uint256 _notValidBefore,
+        uint256 _notValidAfter,
+        uint256 _blocksBeforeVoteCloses,
+        address _customRule
+    ) {
         alligator = msg.sender;
         governor = _governor;
 
-        permissions = _rules.permissions;
-        maxRedelegations = _rules.maxRedelegations;
-        notValidBefore = _rules.notValidBefore;
-        notValidAfter = _rules.notValidAfter;
-        blocksBeforeVoteCloses = _rules.blocksBeforeVoteCloses;
-        customRule = _rules.customRule;
+        permissions = _permissions;
+        maxRedelegations = _maxRedelegations;
+        notValidBefore = _notValidBefore;
+        notValidAfter = _notValidAfter;
+        blocksBeforeVoteCloses = _blocksBeforeVoteCloses;
+        customRule = _customRule;
     }
 
     function isValidSignature(bytes32 hash, bytes calldata signature) external view override returns (bytes4) {

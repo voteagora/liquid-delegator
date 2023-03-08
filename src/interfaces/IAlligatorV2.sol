@@ -9,8 +9,22 @@ interface IAlligatorV2 {
     // =============================================================
 
     event ProxyDeployed(address indexed owner, Rules proxyRules, address proxy);
-    event SubDelegation(address indexed from, address indexed to, Rules rules);
-    event SubDelegations(address indexed from, address[] to, Rules[] rules);
+    event SubDelegation(address indexed from, address indexed to, Rules subDelegateRules);
+    event SubDelegations(address indexed from, address[] to, Rules[] subDelegateRules);
+    event SubDelegationProxy(
+        address indexed from,
+        address indexed to,
+        Rules subDelegateRules,
+        address indexed proxyOwner,
+        Rules proxyRules
+    );
+    event SubDelegationProxies(
+        address indexed from,
+        address[] to,
+        Rules[] subDelegateRules,
+        address indexed proxyOwner,
+        Rules proxyRules
+    );
     event VoteCast(
         address indexed proxy,
         address indexed voter,
@@ -29,12 +43,16 @@ interface IAlligatorV2 {
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     // =============================================================
-    //                       WRITE FUNCTIONS
+    //                      PROXY OPERATIONS
     // =============================================================
 
     function create(address owner, Rules calldata proxyRules, bool registerEnsName) external returns (address endpoint);
 
     function registerProxyDeployment(address owner, Rules calldata proxyRules) external;
+
+    // =============================================================
+    //                     GOVERNOR OPERATIONS
+    // =============================================================
 
     function propose(
         Rules calldata proxyRules,
@@ -89,15 +107,37 @@ interface IAlligatorV2 {
 
     function sign(Rules calldata proxyRules, address[] calldata authority, bytes32 hash) external;
 
-    function subDelegate(address to, Rules calldata rules, bool createProxy) external;
+    // =============================================================
+    //                        SUBDELEGATIONS
+    // =============================================================
 
-    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external;
+    function subDelegateAll(address to, Rules calldata subDelegateRules) external;
+
+    function subDelegateAllBatched(address[] calldata targets, Rules[] calldata subDelegateRules) external;
+
+    function subDelegate(
+        address to,
+        address proxyOwner,
+        Rules calldata subDelegateRules,
+        Rules calldata proxyRules
+    ) external;
+
+    function subDelegateBatched(
+        address[] calldata targets,
+        address proxyOwner,
+        Rules[] calldata subDelegateRules,
+        Rules calldata proxyRules
+    ) external;
+
+    // =============================================================
+    //                          RESTRICTED
+    // =============================================================
 
     function _togglePause() external;
 
-    // // =============================================================
-    // //                         VIEW FUNCTIONS
-    // // =============================================================
+    // =============================================================
+    //                         VIEW FUNCTIONS
+    // =============================================================
 
     function validate(
         Rules memory rules,

@@ -71,7 +71,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     }
 
     // =============================================================
-    //                       WRITE FUNCTIONS
+    //                      PROXY OPERATIONS
     // =============================================================
 
     /**
@@ -84,7 +84,17 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @return endpoint Address of the Proxy
      */
     function create(address owner, Rules calldata proxyRules, bool registerEnsName) public returns (address endpoint) {
-        endpoint = address(new ProxyV2{salt: bytes32(uint256(uint160(owner)))}(address(governor), proxyRules));
+        endpoint = address(
+            new ProxyV2{salt: bytes32(uint256(uint160(owner)))}(
+                address(governor),
+                proxyRules.permissions,
+                proxyRules.maxRedelegations,
+                proxyRules.notValidBefore,
+                proxyRules.notValidAfter,
+                proxyRules.blocksBeforeVoteCloses,
+                proxyRules.customRule
+            )
+        );
         emit ProxyDeployed(owner, proxyRules, endpoint);
 
         if (registerEnsName) {
@@ -110,6 +120,10 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
             ProxyV2(payable(proxy)).setENSReverseRecord(reverseName);
         }
     }
+
+    // =============================================================
+    //                     GOVERNOR OPERATIONS
+    // =============================================================
 
     /**
      * @notice Validate subdelegation rules and make a proposal to the governor.
@@ -302,75 +316,100 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         emit Signed(proxy, authority, hash);
     }
 
+    // =============================================================
+    //                        SUBDELEGATIONS
+    // =============================================================
+
     /**
-     * @notice Subdelegate an address with rules.
+     * @notice Subdelegate all sender Proxies to an address with rules.
      *
      * @param to The address to subdelegate to.
-     * @param rules The rules to apply to the subdelegation.
-     * @param createProxy Whether to create a Proxy for the sender, if one doesn't exist.
+     * @param subDelegateRules The rules to apply to the subdelegation.
      */
-    function subDelegate(address to, Rules calldata rules, bool createProxy) external {
-        // if (createProxy) {
-        //     if (proxyAddress(msg.sender).code.length == 0) {
-        //         create(msg.sender, false);
-        //     }
-        // }
-
-        subDelegations[msg.sender][to] = rules;
-        emit SubDelegation(msg.sender, to, rules);
+    function subDelegateAll(address to, Rules calldata subDelegateRules) external {
+        subDelegations[msg.sender][to] = subDelegateRules;
+        emit SubDelegation(msg.sender, to, subDelegateRules);
     }
 
     /**
-     * @notice Subdelegate multiple addresses with rules.
+     * @notice Subdelegate all sender Proxies to multiple addresses with rules.
      *
      * @param targets The addresses to subdelegate to.
-     * @param rules The rules to apply to the subdelegations.
-     * @param createProxy Whether to create a Proxy for the sender, if one doesn't exist.
+     * @param subDelegateRules The rules to apply to the subdelegations.
      */
-    function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external {
-        require(targets.length == rules.length);
-
-        // if (createProxy) {
-        //     if (proxyAddress(msg.sender).code.length == 0) {
-        //         create(msg.sender, false);
-        //     }
-        // }
-
+    function subDelegateAllBatched(address[] calldata targets, Rules[] calldata subDelegateRules) external {
         for (uint256 i; i < targets.length; ) {
-            subDelegations[msg.sender][targets[i]] = rules[i];
+            subDelegations[msg.sender][targets[i]] = subDelegateRules[i];
 
             unchecked {
                 ++i;
             }
         }
 
-        emit SubDelegations(msg.sender, targets, rules);
+        emit SubDelegations(msg.sender, targets, subDelegateRules);
     }
 
     /**
-     * @notice Pauses and unpauses propose, vote and sign operations.
+     * @notice Subdelegate one Proxy to an address with rules.
      *
-     * @dev Only contract owner can toggle pause.
+     * @param to The address to subdelegate to.
+     * @param proxyOwner Owner of the proxy being subdelegated.
+     * @param subDelegateRules The rules to apply to the subdelegation.
+     * @param proxyRules The base rules of the Proxy to sign from.
      */
-    function _togglePause() external onlyOwner {
-        if (!paused()) {
-            _pause();
-        } else {
-            _unpause();
+    function subDelegate(
+        address to,
+        address proxyOwner,
+        Rules calldata subDelegateRules,
+        Rules calldata proxyRules
+    ) external {
+        if (proxyAddress(proxyOwner, proxyRules).code.length == 0) {
+            create(proxyOwner, proxyRules, false);
         }
+
+        subDelegationsProxy[keccak256(abi.encode(proxyOwner, proxyRules))][msg.sender][to] = subDelegateRules;
+        emit SubDelegationProxy(msg.sender, to, subDelegateRules, proxyOwner, proxyRules);
     }
 
-    // Refill Alligator's balance for gas refunds
-    receive() external payable {}
+    /**
+     * @notice Subdelegate one Proxy to multiple addresses with rules.
+     *
+     * @param targets The addresses to subdelegate to.
+     * @param proxyOwner Owner of the proxy being subdelegated.
+     * @param subDelegateRules The rules to apply to the subdelegations.
+     * @param proxyRules The base rules of the Proxy to sign from.
+     */
+    function subDelegateBatched(
+        address[] calldata targets,
+        address proxyOwner,
+        Rules[] calldata subDelegateRules,
+        Rules calldata proxyRules
+    ) external {
+        if (proxyAddress(proxyOwner, proxyRules).code.length == 0) {
+            create(proxyOwner, proxyRules, false);
+        }
+
+        for (uint256 i; i < targets.length; ) {
+            subDelegationsProxy[keccak256(abi.encode(proxyOwner, proxyRules))][msg.sender][
+                targets[i]
+            ] = subDelegateRules[i];
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        emit SubDelegationProxies(msg.sender, targets, subDelegateRules, proxyOwner, proxyRules);
+    }
 
     // =============================================================
     //                         VIEW FUNCTIONS
     // =============================================================
 
     /**
-     * @notice Validate subdelegation rules.
+     * @notice Validate subdelegation rules. Proxy-specific delegations override address-specific delegations.
      *
-     * @param rules The base rules of the Proxy.
+     * @param proxyRules The base rules of the Proxy.
      * @param sender The sender address to validate.
      * @param authority The authority chain to validate against.
      * @param permissions The permissions to validate.
@@ -378,19 +417,23 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain, 0xFF=proposal
      */
     function validate(
-        Rules memory rules,
+        Rules memory proxyRules,
         address sender,
         address[] memory authority,
         uint256 permissions,
         uint256 proposalId,
         uint256 support
     ) public view {
-        address from = authority[0];
+        address proxyOwner = authority[0];
+        address from = proxyOwner;
         uint256 authorityLength = authority.length;
         address to;
+        Rules memory rules;
 
         // Validate base proxy rules
-        _validateRules(rules, sender, authorityLength, permissions, proposalId, support, from, from, 1);
+        // TODO: make sure second `from` doesn't breaks stuff
+        // TODO: make sure partial authority chain doesn't get allowed
+        _validateRules(proxyRules, sender, authorityLength, permissions, proposalId, support, from, from, 1);
 
         if (from == sender) {
             return;
@@ -401,7 +444,11 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         unchecked {
             for (uint256 i = 1; i < authorityLength; ++i) {
                 to = authority[i];
-                rules = subDelegations[from][to];
+                // Retrieve proxy-specific rules
+                // TODO: make sure this way of encoding first mapping param makes sense
+                rules = subDelegationsProxy[keccak256(abi.encode(proxyOwner, proxyRules))][from][to];
+                // If a subdelegation is not present, retrieve address-specific rules
+                if (rules.permissions == 0) rules = subDelegations[from][to];
 
                 // Validate subdelegation rules
                 _validateRules(rules, sender, authorityLength, permissions, proposalId, support, from, to, i + 1);
@@ -421,6 +468,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @notice Checks if proxy signature is valid.
      *
      * @param proxy The address of the proxy contract.
+     * @param proxyRules The base rules of the Proxy.
      * @param hash The hash to validate.
      * @param data The data to validate.
      *
@@ -445,6 +493,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @notice Returns the address of the proxy contract for a given owner.
      *
      * @param owner The owner of the Proxy.
+     * @param proxyRules The base rules of the Proxy.
      *
      * @return endpoint The address of the Proxy.
      */
@@ -458,7 +507,18 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
                             address(this),
                             bytes32(uint256(uint160(owner))), // salt
                             keccak256(
-                                abi.encodePacked(type(ProxyV2).creationCode, abi.encode(address(governor), proxyRules))
+                                abi.encodePacked(
+                                    type(ProxyV2).creationCode,
+                                    abi.encode(
+                                        address(governor),
+                                        proxyRules.permissions,
+                                        proxyRules.maxRedelegations,
+                                        proxyRules.notValidBefore,
+                                        proxyRules.notValidAfter,
+                                        proxyRules.blocksBeforeVoteCloses,
+                                        proxyRules.customRule
+                                    )
+                                )
                             )
                         )
                     )
@@ -468,8 +528,24 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     }
 
     // =============================================================
-    //                       INTERNAL FUNCTIONS
+    //                  RESTRICTED, INTERNAL, OTHER
     // =============================================================
+
+    /**
+     * @notice Pauses and unpauses propose, vote and sign operations.
+     *
+     * @dev Only contract owner can toggle pause.
+     */
+    function _togglePause() external onlyOwner {
+        if (!paused()) {
+            _pause();
+        } else {
+            _unpause();
+        }
+    }
+
+    // Refill Alligator's balance for gas refunds
+    receive() external payable {}
 
     function _validateRules(
         Rules memory rules,
