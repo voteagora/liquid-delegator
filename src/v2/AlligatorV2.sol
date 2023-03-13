@@ -68,8 +68,14 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     //                         CONSTRUCTOR
     // =============================================================
 
-    constructor(INounsDAOV2 _governor, string memory _ensName, bytes32 _ensNameHash) ENSHelper(_ensName, _ensNameHash) {
+    constructor(
+        INounsDAOV2 _governor,
+        string memory _ensName,
+        bytes32 _ensNameHash,
+        address initOwner
+    ) ENSHelper(_ensName, _ensNameHash) {
         governor = _governor;
+        _transferOwnership(initOwner);
     }
 
     // =============================================================
