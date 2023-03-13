@@ -11,3 +11,7 @@ out/
 .env
 broadcast
 .DS_Store
+
+# Deps
+package-lock.json
+node_modules

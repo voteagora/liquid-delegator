@@ -47,7 +47,9 @@ interface INounsDAOV2 is IGovernorBravo {
 
     function proposals(uint256 proposalId) external view returns (ProposalCondensed memory);
 
-    function getActions(uint256 proposalId)
+    function getActions(
+        uint256 proposalId
+    )
         external
         view
         returns (

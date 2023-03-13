@@ -50,8 +50,13 @@ contract DeployScript is Script {
             descriptor.addManyGlasses(bts);
         }
 
-        FreeNounsTonken nounsToken =
-            new FreeNounsTonken(noundersDAO, minter, descriptor, new NounsSeeder(), proxyRegistry);
+        FreeNounsTonken nounsToken = new FreeNounsTonken(
+            noundersDAO,
+            minter,
+            descriptor,
+            new NounsSeeder(),
+            proxyRegistry
+        );
         NounsDAOProxyV2 proxy = new NounsDAOProxyV2(
             address(timelock),
             address(nounsToken),

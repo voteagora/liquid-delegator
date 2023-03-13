@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "prettier": "^2.8.4",
+    "prettier-plugin-solidity": "^1.1.2"
+  },
+  "scripts": {
+    "lint": "prettier --write **.sol"
+  }
+}

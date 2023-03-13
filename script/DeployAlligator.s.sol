@@ -2,52 +2,28 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import {IProxyRegistry} from "noun-contracts/external/opensea/IProxyRegistry.sol";
-import {NounsDAOExecutor} from "noun-contracts/governance/NounsDAOExecutor.sol";
-import {NounsDAOLogicV2} from "noun-contracts/governance/NounsDAOLogicV2.sol";
-import {NounsDAOProxyV2} from "noun-contracts/governance/NounsDAOProxyV2.sol";
-import {NounsDAOStorageV2} from "noun-contracts/governance/NounsDAOInterfaces.sol";
-import {NounsDescriptor} from "noun-contracts/NounsDescriptor.sol";
-import {FreeNounsTonken} from "./FreeNounsToken.sol";
-import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
-import {Alligator, Rules} from "../src/Alligator.sol";
+import {Alligator} from "../src/Alligator.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
-import {DescriptorImageData} from "./DescriptorImageData.sol";
+import {ENSNamehash} from "../src/utils/ENSNamehash.sol";
 
 contract DeployAlligatorScript is Script {
-    function run() public {
-        // Test wallet: 0x77777101E31b4F3ECafF209704E947855eFbd014
-        address deployer = vm.rememberKey(0x98d35887bece258e8e6b407b13c92004d76c2ffe63b4cbbe343839aaca6bdb9f);
-        vm.startBroadcast(deployer);
+    function run() public returns (Alligator alligator) {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // 0x0699919b235555Be219552912D4a992774e7FB2b
+        address owner = 0x75a3A0d9e5aa246976e8B5775b224Efb3f9b2f9e;
 
-        FreeNounsTonken nounsToken = FreeNounsTonken(address(0x391de1cEa53bD058fFf3216F36a3009D34cFa8D9));
-        address nounsDAO = 0x8044715f20bE17CE0F92535c2968789e3B19CC09;
+        vm.startBroadcast(deployerPrivateKey);
 
-        Alligator alligator = new Alligator(INounsDAOV2(nounsDAO), "", 0);
-        address proxy = alligator.create(deployer);
-        nounsToken.delegate(proxy);
+        // INounsDAOV2 nounsDAO = INounsDAOV2(0xD08faCeb444dbb6b063a51C2ddFb564Fa0f8Dce0); // GOERLI
+        INounsDAOV2 nounsDAO = INounsDAOV2(0x6f3E6272A167e8AcCb32072d08E0957F9c79223d); // MAINNET
+        string memory ensName = "nouns.voteagora.eth";
+        bytes32 ensNameHash = ENSNamehash.namehash(bytes(ensName));
 
-        alligator.subDelegate(
-            0xC3FdAdbAe46798CD8762185A09C5b672A7aA36Bb,
-            Rules({
-                permissions: 0x07,
-                maxRedelegations: 0,
-                notValidBefore: 0,
-                notValidAfter: 0,
-                blocksBeforeVoteCloses: 0,
-                customRule: address(0)
-            })
-        );
-        alligator.subDelegate(
-            0x1E79b045Dc29eAe9fdc69673c9DCd7C53E5E159D,
-            Rules({
-                permissions: 0x07,
-                maxRedelegations: 0,
-                notValidBefore: 0,
-                notValidAfter: 0,
-                blocksBeforeVoteCloses: 0,
-                customRule: address(0)
-            })
-        );
+        alligator = new Alligator(nounsDAO, ensName, ensNameHash);
+
+        if (owner != address(0)) {
+            alligator.transferOwnership(owner);
+        }
+
+        vm.stopBroadcast();
     }
 }

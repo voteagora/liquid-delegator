@@ -120,3 +120,5 @@ From the Governor's perspective, it looks like users `0xAAA's proxy` and `0xFFF'
 ## Attack surface
 
 Alligator does not hold user's tokens, so it's not possible to steal the tokens using a potential bug in the contract. However, it controls voting power which can be abused to vote on malicious proposals (e.g. transfer all the treasury tokens to evil.eth).
+
+In such cases the contract owner holds the power to disable main operations (propose, vote, sign) via `OZ:Pausable` while a new version of Alligator is deployed. Users can then migrate to the new contracts.

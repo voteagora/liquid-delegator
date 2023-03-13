@@ -10,8 +10,10 @@ interface IRule {
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain, 0xff=propose
      * @return IRule.validate.selector
      */
-    function validate(address governor, address voter, uint256 proposalId, uint8 support)
-        external
-        view
-        returns (bytes4);
+    function validate(
+        address governor,
+        address voter,
+        uint256 proposalId,
+        uint8 support
+    ) external view returns (bytes4);
 }

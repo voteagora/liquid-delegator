@@ -1,16 +1,23 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "lib/nouns-monorepo"]
-	path = lib/nouns-monorepo
-	url = https://github.com/nounsDAO/nouns-monorepo
+	branch = v1.5.0
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+	branch = v4.8.2
 [submodule "lib/base64"]
 	path = lib/base64
 	url = https://github.com/Brechtpd/base64
+	branch = v1.1.0
 [submodule "lib/ens-contracts"]
 	path = lib/ens-contracts
 	url = https://github.com/ensdomains/ens-contracts
-	branch = v0.0.8
+	branch = v0.0.19
+[submodule "lib/nouns-monorepo"]
+	path = lib/nouns-monorepo
+	url = https://github.com/nounsDAO/nouns-monorepo
+	branch = master
+[submodule "lib/create3-factory"]
+	path = lib/create3-factory
+	url = https://github.com/zeframlou/create3-factory
