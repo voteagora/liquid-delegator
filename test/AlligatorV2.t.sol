@@ -8,6 +8,7 @@ import "../src/v2/AlligatorV2.sol";
 import "./Utils.sol";
 import "./mock/NounsDAOMock.sol";
 import "./mock/NounsDAO2Mock.sol";
+import {CREATE3Factory} from "create3-factory/CREATE3Factory.sol";
 
 contract AlligatorV2Test is Test {
     // =============================================================
@@ -67,6 +68,7 @@ contract AlligatorV2Test is Test {
     //                             TESTS
     // =============================================================
 
+    CREATE3Factory _create3Factory = new CREATE3Factory();
     AlligatorV2 public alligator;
     NounsDAOMock public nounsDAO;
     address public root;
@@ -82,8 +84,21 @@ contract AlligatorV2Test is Test {
 
     function setUp() public {
         nounsDAO = new NounsDAOMock();
-        alligator = new AlligatorV2(nounsDAO, "", 0);
+
+        alligator = AlligatorV2(
+            payable(
+                _create3Factory.deploy(
+                    keccak256(bytes("SALT")),
+                    bytes.concat(type(AlligatorV2).creationCode, abi.encode(nounsDAO, "", 0, address(this)))
+                )
+            )
+        );
+
         root = alligator.create(address(this), baseRules, true);
+    }
+
+    function testDeploy() public {
+        assertEq(alligator.owner(), address(this));
     }
 
     function testCreate() public {
