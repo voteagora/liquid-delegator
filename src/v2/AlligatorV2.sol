@@ -432,37 +432,53 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         uint256 proposalId,
         uint256 support
     ) public view {
-        address proxyOwner = authority[0];
-        address from = proxyOwner;
         uint256 authorityLength = authority.length;
-        address to;
-        Rules memory rules;
 
         // Validate base proxy rules
-        // TODO: make sure second `from` doesn't breaks stuff
-        // TODO: make sure partial authority chain doesn't get allowed
-        _validateRules(proxyRules, sender, authorityLength, permissions, proposalId, support, from, from, 1);
+        _validateRules(
+            proxyRules,
+            sender,
+            authorityLength,
+            permissions,
+            proposalId,
+            support,
+            address(0),
+            address(0),
+            1
+        );
+
+        address proxyOwner = authority[0];
+        address from = proxyOwner;
 
         if (from == sender) {
             return;
         }
 
-        /// @dev maxRedelegations would hit block size limit before overflowing
-        /// @dev block.number + rules.blocksBeforeVoteCloses fits in uint256
-        unchecked {
-            for (uint256 i = 1; i < authorityLength; ++i) {
-                to = authority[i];
-                // Retrieve proxy-specific rules
-                // TODO: make sure this way of encoding first mapping param makes sense
-                rules = subDelegationsProxy[keccak256(abi.encode(proxyOwner, proxyRules))][from][to];
-                // If a subdelegation is not present, retrieve address-specific rules
-                if (rules.permissions == 0) rules = subDelegations[from][to];
+        address to;
+        Rules memory subdelegationRules;
+        for (uint256 i = 1; i < authorityLength; ) {
+            to = authority[i];
+            // Retrieve proxy-specific rules
+            subdelegationRules = subDelegationsProxy[keccak256(abi.encode(proxyOwner, proxyRules))][from][to];
+            // If a subdelegation is not present, retrieve address-specific rules
+            if (subdelegationRules.permissions == 0) subdelegationRules = subDelegations[from][to];
 
+            unchecked {
                 // Validate subdelegation rules
-                _validateRules(rules, sender, authorityLength, permissions, proposalId, support, from, to, i + 1);
-
-                from = to;
+                _validateRules(
+                    subdelegationRules,
+                    sender,
+                    authorityLength,
+                    permissions,
+                    proposalId,
+                    support,
+                    from,
+                    to,
+                    ++i
+                );
             }
+
+            from = to;
         }
 
         if (from == sender) {
@@ -566,30 +582,34 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         address to,
         uint256 redelegationIndex
     ) private view {
-        if ((rules.permissions & permissions) != permissions) {
-            revert NotDelegated(from, to, permissions);
-        }
-        if (rules.maxRedelegations + redelegationIndex < authorityLength) {
-            revert TooManyRedelegations(from, to);
-        }
-        if (block.timestamp < rules.notValidBefore) {
-            revert NotValidYet(from, to, rules.notValidBefore);
-        }
-        if (rules.notValidAfter != 0) {
-            if (block.timestamp > rules.notValidAfter) revert NotValidAnymore(from, to, rules.notValidAfter);
-        }
-        if (rules.blocksBeforeVoteCloses != 0) {
-            INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
-            if (proposal.endBlock > block.number + rules.blocksBeforeVoteCloses) {
-                revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
+        /// @dev `maxRedelegation` cannot overflow as it increases by 1 each iteration
+        /// @dev block.number + rules.blocksBeforeVoteCloses cannot overflow uint256
+        unchecked {
+            if ((rules.permissions & permissions) != permissions) {
+                revert NotDelegated(from, to, permissions);
             }
-        }
-        if (rules.customRule != address(0)) {
-            if (
-                IRule(rules.customRule).validate(address(governor), sender, proposalId, uint8(support)) !=
-                IRule.validate.selector
-            ) {
-                revert InvalidCustomRule(from, to, rules.customRule);
+            if (rules.maxRedelegations + redelegationIndex < authorityLength) {
+                revert TooManyRedelegations(from, to);
+            }
+            if (block.timestamp < rules.notValidBefore) {
+                revert NotValidYet(from, to, rules.notValidBefore);
+            }
+            if (rules.notValidAfter != 0) {
+                if (block.timestamp > rules.notValidAfter) revert NotValidAnymore(from, to, rules.notValidAfter);
+            }
+            if (rules.blocksBeforeVoteCloses != 0) {
+                INounsDAOV2.ProposalCondensed memory proposal = governor.proposals(proposalId);
+                if (proposal.endBlock > uint256(block.number) + uint256(rules.blocksBeforeVoteCloses)) {
+                    revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
+                }
+            }
+            if (rules.customRule != address(0)) {
+                if (
+                    IRule(rules.customRule).validate(address(governor), sender, proposalId, uint8(support)) !=
+                    IRule.validate.selector
+                ) {
+                    revert InvalidCustomRule(from, to, rules.customRule);
+                }
             }
         }
     }
