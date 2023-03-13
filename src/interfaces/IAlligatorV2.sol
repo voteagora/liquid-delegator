@@ -116,17 +116,17 @@ interface IAlligatorV2 {
     function subDelegateAllBatched(address[] calldata targets, Rules[] calldata subDelegateRules) external;
 
     function subDelegate(
-        address to,
         address proxyOwner,
-        Rules calldata subDelegateRules,
-        Rules calldata proxyRules
+        Rules calldata proxyRules,
+        address to,
+        Rules calldata subDelegateRules
     ) external;
 
     function subDelegateBatched(
-        address[] calldata targets,
         address proxyOwner,
-        Rules[] calldata subDelegateRules,
-        Rules calldata proxyRules
+        Rules calldata proxyRules,
+        address[] calldata targets,
+        Rules[] calldata subDelegateRules
     ) external;
 
     // =============================================================

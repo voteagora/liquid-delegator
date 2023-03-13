@@ -366,10 +366,10 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @param proxyRules The base rules of the Proxy to sign from.
      */
     function subDelegate(
-        address to,
         address proxyOwner,
-        Rules calldata subDelegateRules,
-        Rules calldata proxyRules
+        Rules calldata proxyRules,
+        address to,
+        Rules calldata subDelegateRules
     ) external {
         if (proxyAddress(proxyOwner, proxyRules).code.length == 0) {
             create(proxyOwner, proxyRules, false);
@@ -388,10 +388,10 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @param proxyRules The base rules of the Proxy to sign from.
      */
     function subDelegateBatched(
-        address[] calldata targets,
         address proxyOwner,
-        Rules[] calldata subDelegateRules,
-        Rules calldata proxyRules
+        Rules calldata proxyRules,
+        address[] calldata targets,
+        Rules[] calldata subDelegateRules
     ) external {
         if (proxyAddress(proxyOwner, proxyRules).code.length == 0) {
             create(proxyOwner, proxyRules, false);
