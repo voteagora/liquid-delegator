@@ -95,6 +95,9 @@ contract AlligatorV2Test is Test {
         );
 
         root = alligator.create(address(this), baseRules, true);
+
+        vm.prank(Utils.alice);
+        alligator.subDelegate(Utils.alice, baseRules, address(this), baseRules);
     }
 
     function testDeploy() public {
@@ -102,25 +105,33 @@ contract AlligatorV2Test is Test {
     }
 
     function testCreate() public {
-        address computedAddress = alligator.proxyAddress(Utils.alice, baseRules);
+        address computedAddress = alligator.proxyAddress(Utils.bob, baseRules);
         assertTrue(computedAddress.code.length == 0);
-        alligator.create(Utils.alice, baseRules, true);
+        alligator.create(Utils.bob, baseRules, false);
         assertTrue(computedAddress.code.length != 0);
     }
 
     function testProxyAddressMatches() public {
-        address proxy = alligator.create(Utils.alice, baseRules, true);
-        assertEq(alligator.proxyAddress(Utils.alice, baseRules), proxy);
+        address proxy = alligator.create(Utils.bob, baseRules, true);
+        assertEq(alligator.proxyAddress(Utils.bob, baseRules), proxy);
     }
 
-    // function testCastVote() public {
-    //     address[] memory authority = new address[](1);
-    //     authority[0] = address(this);
+    function testCastVote() public {
+        address[] memory authority = new address[](1);
+        authority[0] = address(this);
 
-    //     vm.expectEmit(true, true, false, true);
-    //     emit VoteCast(alligator.proxyAddress(address(this)), address(this), authority, 1, 1);
-    //     alligator.castVote(authority, 1, 1);
-    // }
+        vm.expectEmit(true, true, false, true);
+        emit VoteCast(alligator.proxyAddress(address(this), baseRules), address(this), authority, 1, 1);
+        alligator.castVote(baseRules, authority, 1, 1);
+
+        address[] memory authority2 = new address[](2);
+        authority2[0] = address(Utils.alice);
+        authority2[1] = address(this);
+
+        vm.expectEmit(true, true, false, true);
+        emit VoteCast(alligator.proxyAddress(address(Utils.alice), baseRules), address(this), authority2, 1, 1);
+        alligator.castVote(baseRules, authority2, 1, 1);
+    }
 
     // function testCastVoteWithReason() public {
     //     address[] memory authority = new address[](1);
