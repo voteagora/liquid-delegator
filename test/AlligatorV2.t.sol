@@ -357,6 +357,77 @@ contract AlligatorV2Test is Test {
         alligator.castVote(baseRules, authority, 1, 1);
     }
 
+    function testSubDelegateAll() public {
+        alligator.create(Utils.alice, baseRules, false);
+
+        vm.prank(Utils.alice);
+        alligator.subDelegateAll(address(this), baseRules);
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 255,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+        alligator.create(Utils.alice, rules, false);
+
+        address[] memory authority = new address[](2);
+        authority[0] = Utils.alice;
+        authority[1] = address(this);
+
+        alligator.castVote(baseRules, authority, 1, 1);
+        alligator.castVote(rules, authority, 1, 1);
+        (uint8 permissions, , , , , ) = alligator.subDelegations(Utils.alice, address(this));
+        assertEq(permissions, baseRules.permissions);
+    }
+
+    function testSubDelegateAllBatched() public {
+        alligator.create(Utils.alice, baseRules, false);
+
+        address[] memory to = new address[](2);
+        to[0] = address(this);
+        to[1] = Utils.bob;
+
+        Rules[] memory proxyRules = new Rules[](2);
+        proxyRules[0] = baseRules;
+        proxyRules[1] = baseRules;
+
+        vm.prank(Utils.alice);
+        alligator.subDelegateAllBatched(to, proxyRules);
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 255,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+        alligator.create(Utils.alice, rules, false);
+
+        address[] memory authority1 = new address[](2);
+        authority1[0] = Utils.alice;
+        authority1[1] = address(this);
+
+        address[] memory authority2 = new address[](2);
+        authority2[0] = Utils.alice;
+        authority2[1] = Utils.bob;
+
+        alligator.castVote(baseRules, authority1, 1, 1);
+        alligator.castVote(rules, authority1, 1, 1);
+        (uint8 permissions, , , , , ) = alligator.subDelegations(Utils.alice, address(this));
+        assertEq(permissions, baseRules.permissions);
+
+        vm.startPrank(Utils.bob);
+        alligator.castVote(baseRules, authority2, 1, 1);
+        alligator.castVote(rules, authority2, 1, 1);
+        (uint8 bobPermissions, , , , , ) = alligator.subDelegations(Utils.alice, address(this));
+        assertEq(bobPermissions, baseRules.permissions);
+        vm.stopPrank();
+    }
+
     function testSupportsSigning() public {
         bytes32 hash1 = keccak256(abi.encodePacked("pass"));
         bytes32 hash2 = keccak256(abi.encodePacked("fail"));
