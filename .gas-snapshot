@@ -1,4 +1,5 @@
-AlligatorENSTest:testENSName() (gas: 4635888)
+AlligatorENSTest:testENSNameV1() (gas: 4658512)
+AlligatorENSTest:testENSNameV2() (gas: 5591826)
 AlligatorTest:testCastRefundableVotesWithReasonBatched() (gas: 823092)
 AlligatorTest:testCastVote() (gas: 146593)
 AlligatorTest:testCastVoteWithReason() (gas: 147471)
