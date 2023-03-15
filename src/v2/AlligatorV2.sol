@@ -72,10 +72,10 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         INounsDAOV2 _governor,
         string memory _ensName,
         bytes32 _ensNameHash,
-        address initOwner
+        address _initOwner
     ) ENSHelper(_ensName, _ensNameHash) {
         governor = _governor;
-        _transferOwnership(initOwner);
+        _transferOwnership(_initOwner);
     }
 
     // =============================================================
@@ -359,11 +359,12 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
 
     /**
      * @notice Subdelegate one Proxy to an address with rules.
+     * Creates a Proxy for `proxyOwner` and `proxyRules` if it does not exist.
      *
-     * @param to The address to subdelegate to.
      * @param proxyOwner Owner of the proxy being subdelegated.
-     * @param subDelegateRules The rules to apply to the subdelegation.
      * @param proxyRules The base rules of the Proxy to sign from.
+     * @param to The address to subdelegate to.
+     * @param subDelegateRules The rules to apply to the subdelegation.
      */
     function subDelegate(
         address proxyOwner,
@@ -381,11 +382,12 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
 
     /**
      * @notice Subdelegate one Proxy to multiple addresses with rules.
+     * Creates a Proxy for `proxyOwner` and `proxyRules` if it does not exist.
      *
-     * @param targets The addresses to subdelegate to.
      * @param proxyOwner Owner of the proxy being subdelegated.
-     * @param subDelegateRules The rules to apply to the subdelegations.
      * @param proxyRules The base rules of the Proxy to sign from.
+     * @param targets The addresses to subdelegate to.
+     * @param subDelegateRules The rules to apply to the subdelegations.
      */
     function subDelegateBatched(
         address proxyOwner,
