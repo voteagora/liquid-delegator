@@ -11,7 +11,6 @@ import {NounsDescriptor} from "noun-contracts/NounsDescriptor.sol";
 import {FreeNounsTonken} from "./FreeNounsToken.sol";
 import {NounsSeeder} from "noun-contracts/NounsSeeder.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
-import {DescriptorImageData} from "./DescriptorImageData.sol";
 
 contract DeployScript is Script {
     uint256 constant TIMELOCK_DELAY = 2 days;
