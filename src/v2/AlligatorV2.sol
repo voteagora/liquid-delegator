@@ -476,7 +476,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
                     support,
                     from,
                     to,
-                    ++i
+                    ++i // pass `i + 1` and increment at the same time
                 );
             }
 
