@@ -59,7 +59,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     mapping(address from => mapping(address to => Rules subDelegationRules)) public subDelegations;
 
     // Subdelegation rules to `to` for a single proxy owned by `from`
-    mapping(bytes32 proxyRules => mapping(address from => mapping(address to => Rules subDelegationRules)))
+    mapping(bytes32 proxyHash => mapping(address from => mapping(address to => Rules subDelegationRules)))
         public subDelegationsProxy;
 
     mapping(address proxyAddress => mapping(bytes32 hashSig => bool isSignatureValid)) internal validSignatures;
@@ -449,19 +449,19 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
             1
         );
 
-        address proxyOwner = authority[0];
-        address from = proxyOwner;
+        address from = authority[0];
 
         if (from == sender) {
             return;
         }
 
+        bytes32 proxyHash = keccak256(abi.encode(from, proxyRules));
         address to;
         Rules memory subdelegationRules;
         for (uint256 i = 1; i < authorityLength; ) {
             to = authority[i];
             // Retrieve proxy-specific rules
-            subdelegationRules = subDelegationsProxy[keccak256(abi.encode(proxyOwner, proxyRules))][from][to];
+            subdelegationRules = subDelegationsProxy[proxyHash][from][to];
             // If a subdelegation is not present, retrieve address-specific rules
             if (subdelegationRules.permissions == 0) subdelegationRules = subDelegations[from][to];
 
