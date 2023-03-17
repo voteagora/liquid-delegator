@@ -171,7 +171,7 @@ contract AlligatorV2Test is Test {
         uint256 initBalance = 1 ether;
         payable(address(alligator)).transfer(initBalance);
 
-        (address[][] memory authorities, address[] memory proxies, Rules[] memory proxyRules) = _formatBatchData();
+        (address[][] memory authorities, , Rules[] memory proxyRules) = _formatBatchData();
 
         uint256 refundAmount = 200000 * tx.gasprice;
         vm.prank(Utils.carol);
