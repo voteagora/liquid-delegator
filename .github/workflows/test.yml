@@ -43,8 +43,8 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm install --frozen-lockfile --prefer-offline
 
-      # - name: Check contract sizes
-      #   run: forge build --sizes
+      - name: Check contract sizes
+        run: forge build --sizes
 
       - name: Run tests
         env:
