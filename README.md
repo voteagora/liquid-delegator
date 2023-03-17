@@ -1,27 +1,26 @@
 # Agora Liquid Delegator
 
-## Goal
+## Overview
 
-Agora Liquid Delegator (codename Alligator) allows token holders to subdelegate all their votes to multiple people according to a set of rules. Any delegatee can further sub-delegate their votes to others, optionally adding even more rules.
+Alligator allows token holders to delegate and subdelegate their voting power to _voters_ according to a set of rules. Any voter can further sub-delegate their voting power to others, optionally adding even more rules.
 
 For example, a token holder `0xAAA` delegates their votes to `0xBBB`, but only allows `0xBBB` use the tokens on proposals that move less than 100 ETH from the treasury. `0xBBB` sub-delegates their votes to `0xCCC`, but only allows voting in the last 12 hours before the vote closes. `0xCCC` can now use `0xAAA`'s voting power to cast a vote, but only on small proposals and only in the last 12 hours.
 
+This logic is achieved through the use of _proxy contracts_ designed to hold the voting power of their respective owner, and forward execution of governor's operations after subdelegation rules are validated by Alligator.
+
 ## Features
 
-1. Sub-delegate to as any number of subjects
-2. Add rules to sub-delegation:
+1. Create proxy contracts for an address
+2. Sub-delegate to any number of voters
+3. Add rules to sub-delegation:
    - Permissions: create proposal, vote, sign (via EIP-1271)
    - Limit number of re-delegations
    - Set timestamp range when sub-delegation is active
    - Limit voting to a number of blocks before vote closes
    - Custom rules (calls external contract to validate)
-3. Casting votes, creating new proposals and voting on Prop House
-4. Batched operations
-5. Gas refund
-
-### WORK IN PROGRESS
-
-There's a few TODO items in the code and the tests are not comprehensive. But the repo is in good enough shape to ask for external feedback on the architecture & approach.
+4. Casting votes, creating new proposals and voting on Prop House
+5. Batch operations
+6. Gas refund
 
 ## How it works
 
@@ -113,12 +112,49 @@ From the Governor's perspective, it looks like users `0xAAA's proxy` and `0xFFF'
 
 ## Deploying to testnet:
 
-1. Fund `0x77777101E31b4F3ECafF209704E947855eFbd014` with SepoliaETH
-2. Get Etherscan API key
-3. `forge script script/DeployAlligator.s.sol -vvvv --fork-url https://rpc-sepolia.rockx.com --chain-id 11155111 --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY`
+1. Configure `.env`
+2. Run `forge script script/Deploy.s.sol -f goerli --broadcast --verify`
 
 ## Attack surface
 
 Alligator does not hold user's tokens, so it's not possible to steal the tokens using a potential bug in the contract. However, it controls voting power which can be abused to vote on malicious proposals (e.g. transfer all the treasury tokens to evil.eth).
 
 In such cases the contract owner holds the power to disable main operations (propose, vote, sign) via `OZ:Pausable` while a new version of Alligator is deployed. Users can then migrate to the new contracts.
+
+# Alligator V2
+
+![Alligator V2 architecture](/public/v2.png)
+
+## Overview
+
+AlligatorV2 has the same functionality of V1, with the addition of delegators being able to add their voting power into proxies owned by others, turning them effectively into _voting pools_.
+
+This architecture is designed to prevent gas costs to grow uncontrollably in systems where the number of delegators to a single voter is significant. This is the case for most ecosystems using governors based on ERC20 tokens.
+
+## Differences
+
+**Proxy**
+
+- In V1 each delegator had its own, single proxy. In V2 each address (voter) can be the _owner / controller_ of multiple pools
+- In V1 delegators used to DELEGATE voting power to their own proxy, then SUBDELEGATE the proxy’s to others. In V2 delegators will mainly DELEGATE to pools owned by other _voters_
+  - As a result delegators will be giving away their voting power to the chosen voter. They cannot use that voting power until they undelegate.
+- Each proxy is now linked to a set of _base proxy rules_.
+  - A voter owning a proxy cannot use the voting power held in the proxy unless the base rules are respected.
+  - Anyone can create a proxy with rules for someone else. However incentives in this new system makes it so that delegators are incentivised to DELEGATE their voting power to existing pools instead of creating new ones.
+  - In V2, the behaviour of a V1 proxy can be obtained with one having full permissions and no restrictions as rules, owned by delegator (instead of another voter)
+- {Voter’s address} AND {Proxy base rules} are used to determine the address of a proxy.
+  - There cannot be two pools owned by a voter with the same set of rules.
+
+**Subdelegations**
+
+- In V1 delegators could only have 1 proxy, thus subdelegations were both _address-specific_ (delegator→voter) and _proxy-specific_ (delegator’s proxy→voter). In V2 a voter may own multiple pools, so there is a distinction between the two. V2 allows both kinds of subdelegations:
+  - Address-specific: SUBDELEGATE voting power of all pools owned by a voter to an address. This is also valid for pools yet to be created.
+  - Proxy-specific: SUBDELEGATE voting power of a single proxy owned by a voter to an address
+  - Proxy-specific subdelegation rules override address-specific ones.
+- In V1 the delegator was the one who SUBDELEGATED voting power to others (retaining ability to vote). In V2 it’s the voters who SUBDELEGATE.
+  - Voters are the proxy owners, and the first address in the authority chains when a governor operation is executed
+- When a voter SUBDELEGATE to another voter, subdelegation rules stack on top of the original proxy’s base rules.
+
+**Validation**
+
+- Whenever a governor operation is executed (propose/vote/sign), the validation process first checks validity of base proxy rules and then additional subdelegation rules (based on the authority chain)
