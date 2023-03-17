@@ -24,8 +24,22 @@ contract AlligatorV2Test is Test {
     error InvalidCustomRule(address from, address to, address customRule);
 
     event ProxyDeployed(address indexed owner, Rules proxyRules, address proxy);
-    event SubDelegation(address indexed from, address indexed to, Rules rules);
-    event SubDelegations(address indexed from, address[] to, Rules[] rules);
+    event SubDelegation(address indexed from, address indexed to, Rules subDelegateRules);
+    event SubDelegations(address indexed from, address[] to, Rules[] subDelegateRules);
+    event SubDelegationProxy(
+        address indexed from,
+        address indexed to,
+        Rules subDelegateRules,
+        address indexed proxyOwner,
+        Rules proxyRules
+    );
+    event SubDelegationProxies(
+        address indexed from,
+        address[] to,
+        Rules[] subDelegateRules,
+        address indexed proxyOwner,
+        Rules proxyRules
+    );
     event VoteCast(
         address indexed proxy,
         address indexed voter,
@@ -202,6 +216,9 @@ contract AlligatorV2Test is Test {
 
     function testSubDelegate_proxyCreated() public {
         vm.prank(Utils.alice);
+
+        vm.expectEmit(true, true, false, true);
+        emit SubDelegationProxy(Utils.alice, address(this), baseRules, Utils.alice, baseRules);
         alligator.subDelegate(Utils.alice, baseRules, address(this), baseRules);
         assertTrue(alligator.proxyAddress(Utils.alice, baseRules).code.length != 0);
     }
@@ -230,6 +247,9 @@ contract AlligatorV2Test is Test {
         });
 
         vm.prank(Utils.alice);
+
+        vm.expectEmit(true, true, false, true);
+        emit SubDelegationProxies(Utils.alice, targets, rules, Utils.alice, baseRules);
         alligator.subDelegateBatched(Utils.alice, baseRules, targets, rules);
         vm.prank(Utils.bob);
         alligator.subDelegateBatched(Utils.alice, baseRules, targets, rules);
@@ -361,6 +381,8 @@ contract AlligatorV2Test is Test {
         alligator.create(Utils.alice, baseRules, false);
 
         vm.prank(Utils.alice);
+        vm.expectEmit(true, true, false, true);
+        emit SubDelegation(Utils.alice, address(this), baseRules);
         alligator.subDelegateAll(address(this), baseRules);
 
         Rules memory rules = Rules({
@@ -395,6 +417,8 @@ contract AlligatorV2Test is Test {
         proxyRules[1] = baseRules;
 
         vm.prank(Utils.alice);
+        vm.expectEmit(true, true, false, true);
+        emit SubDelegations(Utils.alice, to, proxyRules);
         alligator.subDelegateAllBatched(to, proxyRules);
 
         Rules memory rules = Rules({
