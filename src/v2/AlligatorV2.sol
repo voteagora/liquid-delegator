@@ -17,6 +17,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     // =============================================================
 
     error BadSignature();
+    error InvalidAuthorityChain();
     error NotDelegated(address from, address to, uint256 requiredPermissions);
     error TooManyRedelegations(address from, address to);
     error NotValidYet(address from, address to, uint256 willBeValidFrom);
@@ -508,6 +509,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     ) public view returns (bytes4 magicValue) {
         if (data.length > 0) {
             (address[] memory authority, bytes memory signature) = abi.decode(data, (address[], bytes));
+            if (proxy != proxyAddress(authority[0], proxyRules)) revert InvalidAuthorityChain();
             address signer = ECDSA.recover(hash, signature);
             validate(proxyRules, signer, authority, PERMISSION_SIGN, 0, 0xFE);
             return IERC1271.isValidSignature.selector;

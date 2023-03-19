@@ -15,6 +15,7 @@ contract AlligatorTest is Test {
     // =============================================================
 
     error BadSignature();
+    error InvalidAuthorityChain();
     error NotDelegated(address from, address to, uint256 requiredPermissions);
     error TooManyRedelegations(address from, address to);
     error NotValidYet(address from, address to, uint256 willBeValidFrom);
@@ -581,7 +582,7 @@ contract AlligatorTest is Test {
         assertEq(IERC1271(root).isValidSignature(hash1, ""), bytes4(0));
     }
 
-    function testOffchainSignatures() public {
+    function testIsValidSignature() public {
         uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
         address signer = vm.addr(privateKey);
         bytes32 hash1 = keccak256(abi.encodePacked("data"));
@@ -620,6 +621,28 @@ contract AlligatorTest is Test {
         // Different hash means erecover returns a different user
         vm.expectRevert();
         IERC1271(root).isValidSignature(hash2, data);
+    }
+
+    function testIsValidSignature_signingBug() public {
+        // create an address from private key = 0x01 that should have no authority
+        uint PRIVATE_KEY = 1;
+        address signer = vm.addr(PRIVATE_KEY);
+
+        // sign any message with that private key
+        bytes32 hash = keccak256(abi.encodePacked("i can make you sign anything"));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, hash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // set the authority chain to be only my own address
+        address[] memory authority = new address[](1);
+        authority[0] = signer;
+
+        // create the signature data, which consists of authority chain and signature
+        bytes memory digest = abi.encode(authority, signature);
+
+        // confirm that the call is reverted with `InvalidAuthorityChain()`
+        vm.expectRevert(InvalidAuthorityChain.selector);
+        IERC1271(root).isValidSignature(hash, digest);
     }
 
     function testPause() public {
