@@ -80,8 +80,8 @@ contract ProxyV2 is IERC1271 {
 
     // If funds are received from the governor, send them back to the caller.
     receive() external payable {
-        require(msg.sender == governor, "NOT_GOVERNOR");
+        require(msg.sender == governor);
         (bool success, ) = payable(tx.origin).call{value: msg.value}("");
-        require(success, "ETH_TRANSFER_FAILED");
+        require(success);
     }
 }
