@@ -8,6 +8,7 @@ import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
 import "../src/v2/AlligatorV2.sol";
 import "./Utils.sol";
 import "./mock/NounsDAOMock.sol";
+import "./mock/NounsDAOAltMock.sol";
 import "./mock/NounsDAO2Mock.sol";
 import {CREATE3Factory} from "create3-factory/CREATE3Factory.sol";
 
@@ -88,6 +89,9 @@ contract AlligatorV2Test is Test {
     AlligatorV2 public alligator;
     NounsDAOMock public nounsDAO;
     address public root;
+    AlligatorV2 public alligatorAlt;
+    NounsDAOAltMock public nounsDAOAlt;
+    address public rootAlt;
     Rules public baseRules =
         Rules(
             7, // All permissions
@@ -100,6 +104,7 @@ contract AlligatorV2Test is Test {
 
     function setUp() public {
         nounsDAO = new NounsDAOMock();
+        nounsDAOAlt = new NounsDAOAltMock();
 
         alligator = AlligatorV2(
             payable(
@@ -109,8 +114,17 @@ contract AlligatorV2Test is Test {
                 )
             )
         );
+        alligatorAlt = AlligatorV2(
+            payable(
+                _create3Factory.deploy(
+                    keccak256(bytes("SALTALT")),
+                    bytes.concat(type(AlligatorV2).creationCode, abi.encode(nounsDAOAlt, "", 0, address(this)))
+                )
+            )
+        );
 
         root = alligator.create(address(this), baseRules, true); // selfProxy
+        rootAlt = alligatorAlt.create(address(this), baseRules, true); // selfProxy
     }
 
     function testDeploy() public {
@@ -183,7 +197,7 @@ contract AlligatorV2Test is Test {
     }
 
     // Run `forge test` with --gas-price param to set the gas price
-    function testCastRefundableVotesWithReasonBatched() public {
+    function testCastRefundableVotesWithReasonBatched_withTxOrigin() public {
         uint256 refundAmount = 206108 * tx.gasprice;
         vm.deal(address(nounsDAO), 1 ether);
 
@@ -195,6 +209,55 @@ contract AlligatorV2Test is Test {
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(address(this), baseRules)), true);
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(Utils.bob, baseRules)), true);
         assertEq(nounsDAO.totalVotes(), 2);
+        assertEq(Utils.carol.balance, refundAmount);
+    }
+
+    // Run `forge test` with --gas-price param to set the gas price
+    function testCastRefundableVotesWithReasonBatched_withMsgSender() public {
+        uint256 refundAmount = 206108 * tx.gasprice;
+        vm.deal(address(nounsDAOAlt), 1 ether);
+
+        address[] memory authority1 = new address[](4);
+        authority1[0] = address(this);
+        authority1[1] = Utils.alice;
+        authority1[2] = Utils.bob;
+        authority1[3] = Utils.carol;
+
+        address[] memory authority2 = new address[](2);
+        authority2[0] = Utils.bob;
+        authority2[1] = Utils.carol;
+
+        address[][] memory authorities = new address[][](2);
+        authorities[0] = authority1;
+        authorities[1] = authority2;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 255,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligatorAlt.subDelegate(address(this), baseRules, Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligatorAlt.subDelegate(address(this), baseRules, Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligatorAlt.subDelegate(address(this), baseRules, Utils.carol, rules);
+        vm.prank(Utils.bob);
+        alligatorAlt.subDelegate(Utils.bob, baseRules, Utils.carol, rules);
+
+        Rules[] memory proxyRules = new Rules[](2);
+        proxyRules[0] = baseRules;
+        proxyRules[1] = baseRules;
+
+        vm.prank(Utils.carol, Utils.carol);
+        alligatorAlt.castRefundableVotesWithReasonBatched{gas: 1e9}(proxyRules, authorities, 1, 1, "");
+
+        assertEq(nounsDAOAlt.hasVoted(alligatorAlt.proxyAddress(address(this), baseRules)), true);
+        assertEq(nounsDAOAlt.hasVoted(alligatorAlt.proxyAddress(Utils.bob, baseRules)), true);
+        assertEq(nounsDAOAlt.totalVotes(), 2);
         assertEq(Utils.carol.balance, refundAmount);
     }
 
