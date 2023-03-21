@@ -172,9 +172,11 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
         uint8 support,
         string calldata reason
     ) public whenNotPaused {
-        address[] memory proxies = new address[](authorities.length);
+        uint256 authorityLength = authorities.length;
+        address[] memory proxies = new address[](authorityLength);
         address[] memory authority;
-        for (uint256 i; i < authorities.length; ) {
+
+        for (uint256 i; i < authorityLength; ) {
             authority = authorities[i];
             validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
             proxies[i] = proxyAddress(authority[0]);
@@ -293,7 +295,8 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
      * @param createProxy Whether to create a Proxy for the sender, if one doesn't exist.
      */
     function subDelegateBatched(address[] calldata targets, Rules[] calldata rules, bool createProxy) external {
-        require(targets.length == rules.length);
+        uint256 targetsLength = targets.length;
+        require(targetsLength == rules.length);
 
         if (createProxy) {
             if (proxyAddress(msg.sender).code.length == 0) {
@@ -301,7 +304,7 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
             }
         }
 
-        for (uint256 i; i < targets.length; ) {
+        for (uint256 i; i < targetsLength; ) {
             subDelegations[msg.sender][targets[i]] = rules[i];
 
             unchecked {
