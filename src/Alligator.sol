@@ -192,7 +192,9 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
 
     /**
      * @notice Validate subdelegation rules and cast multiple refundable votes with reason on the governor.
-     * Refunds the gas used to cast the votes up to a limit specified in `governor`, if votes have been cast.
+     * Refunds the gas used to cast the votes up to a limit specified in `governor`.
+     *
+     * Note: The gas used will not be refunded for authority chains resulting in 0 votes cast.
      *
      * @param authorities The authority chains to validate against.
      * @param proposalId The id of the proposal to vote on
