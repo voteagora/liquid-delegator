@@ -41,7 +41,6 @@ contract AlligatorTest is Test {
         uint8 support
     );
     event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
-    event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     uint8 internal constant PERMISSION_VOTE = 1;
     uint8 internal constant PERMISSION_SIGN = 1 << 1;
@@ -199,8 +198,8 @@ contract AlligatorTest is Test {
 
     // Run `forge test` with --gas-price param to set the gas price
     function testCastRefundableVotesWithReasonBatched() public {
-        uint256 initBalance = 1 ether;
-        payable(address(alligator)).transfer(initBalance);
+        uint256 refundAmount = 206108 * tx.gasprice;
+        vm.deal(address(nounsDAO), 1 ether);
 
         address[] memory authority1 = new address[](4);
         authority1[0] = address(this);
@@ -231,21 +230,14 @@ contract AlligatorTest is Test {
         vm.prank(Utils.bob);
         alligator.subDelegate(Utils.carol, rules, true);
 
-        address[] memory proxies = new address[](2);
-        proxies[0] = alligator.proxyAddress(address(this));
-        proxies[1] = alligator.proxyAddress(Utils.bob);
-
-        vm.prank(Utils.carol);
-        vm.expectEmit(true, false, false, true);
-        uint256 refundAmount = 200000 * tx.gasprice;
-        emit RefundableVote(Utils.carol, refundAmount, true);
+        vm.prank(Utils.carol, Utils.carol);
         alligator.castRefundableVotesWithReasonBatched{gas: 1e9}(authorities, 1, 1, "");
 
         assertTrue(alligator.proxyAddress(Utils.alice).code.length != 0);
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(address(this))), true);
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(Utils.bob)), true);
         assertEq(nounsDAO.totalVotes(), 2);
-        assertEq(address(alligator).balance, initBalance - refundAmount);
+        assertEq(Utils.carol.balance, refundAmount);
     }
 
     // // Run `forge test` with --gas-price param to set the gas price

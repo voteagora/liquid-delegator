@@ -40,18 +40,6 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
 
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
-    /// @notice The maximum priority fee used to cap gas refunds in `castRefundableVote`
-    uint256 public constant MAX_REFUND_PRIORITY_FEE = 2 gwei;
-
-    /// @notice The vote refund gas overhead, including 7K for ETH transfer and 29K for general transaction overhead
-    uint256 public constant REFUND_BASE_GAS = 36000;
-
-    /// @notice The maximum gas units the DAO will refund voters on; supports about 9,190 characters
-    uint256 public constant MAX_REFUND_GAS_USED = 200_000;
-
-    /// @notice The maximum basefee the DAO will refund voters on
-    uint256 public constant MAX_REFUND_BASE_FEE = 200 gwei;
-
     // =============================================================
     //                        MUTABLE STORAGE
     // =============================================================
@@ -201,8 +189,8 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
     }
 
     /**
-     * @notice Validate subdelegation rules and cast multiple votes with reason on the governor.
-     * Refunds the gas used to cast the votes, if possible.
+     * @notice Validate subdelegation rules and cast multiple refundable votes with reason on the governor.
+     * Refunds the gas used to cast the votes up to a limit specified in `governor`, if votes have been cast.
      *
      * @param authorities The authority chains to validate against.
      * @param proposalId The id of the proposal to vote on
@@ -215,9 +203,21 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
         uint8 support,
         string calldata reason
     ) external whenNotPaused {
-        uint256 startGas = gasleft();
-        castVotesWithReasonBatched(authorities, proposalId, support, reason);
-        _refundGas(startGas);
+        address[] memory proxies = new address[](authorities.length);
+        address[] memory authority;
+
+        for (uint256 i; i < authorities.length; ) {
+            authority = authorities[i];
+            validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
+            proxies[i] = proxyAddress(authority[0]);
+            INounsDAOV2(proxies[i]).castRefundableVoteWithReason(proposalId, support, reason);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        emit VotesCast(proxies, msg.sender, authorities, proposalId, support);
     }
 
     /**
@@ -324,9 +324,6 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
             _unpause();
         }
     }
-
-    // Refill Alligator's balance for gas refunds
-    receive() external payable {}
 
     // =============================================================
     //                         VIEW FUNCTIONS
@@ -449,28 +446,5 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
                 )
             )
         );
-    }
-
-    // =============================================================
-    //                       INTERNAL FUNCTIONS
-    // =============================================================
-
-    function _refundGas(uint256 startGas) internal {
-        unchecked {
-            uint256 balance = address(this).balance;
-            if (balance == 0) {
-                return;
-            }
-            uint256 basefee = min(block.basefee, MAX_REFUND_BASE_FEE);
-            uint256 gasPrice = min(tx.gasprice, basefee + MAX_REFUND_PRIORITY_FEE);
-            uint256 gasUsed = min(startGas - gasleft() + REFUND_BASE_GAS, MAX_REFUND_GAS_USED);
-            uint256 refundAmount = min(gasPrice * gasUsed, balance);
-            (bool refundSent, ) = msg.sender.call{value: refundAmount}("");
-            emit RefundableVote(msg.sender, refundAmount, refundSent);
-        }
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
     }
 }

@@ -26,7 +26,6 @@ interface IAlligator {
         uint8 support
     );
     event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
-    event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     // =============================================================
     //                       WRITE FUNCTIONS

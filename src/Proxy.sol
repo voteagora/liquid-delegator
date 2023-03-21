@@ -41,5 +41,10 @@ contract Proxy is IERC1271 {
         }
     }
 
-    // `receive` is omitted to minimize contract size
+    // If funds are received from the governor, send them back to the caller.
+    receive() external payable {
+        require(msg.sender == governor);
+        (bool success, ) = payable(tx.origin).call{value: msg.value}("");
+        require(success);
+    }
 }

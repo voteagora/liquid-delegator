@@ -58,7 +58,6 @@ contract AlligatorV2Test is Test {
         uint8 support
     );
     event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
-    event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     uint8 internal constant PERMISSION_VOTE = 1;
     uint8 internal constant PERMISSION_SIGN = 1 << 1;
