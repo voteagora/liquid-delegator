@@ -486,11 +486,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
             from = to;
         }
 
-        if (from == sender) {
-            return;
-        }
-
-        revert NotDelegated(from, sender, permissions);
+        if (from != sender) revert NotDelegated(from, sender, permissions);
     }
 
     /**

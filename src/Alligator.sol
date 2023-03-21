@@ -393,11 +393,7 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
             }
         }
 
-        if (from == sender) {
-            return;
-        }
-
-        revert NotDelegated(from, sender, permissions);
+        if (from != sender) revert NotDelegated(from, sender, permissions);
     }
 
     /**
