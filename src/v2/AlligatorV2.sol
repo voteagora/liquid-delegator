@@ -44,10 +44,10 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     //                        MUTABLE STORAGE
     // =============================================================
 
-    // Subdelegation rules to `to` for all proxies owned by `from`
+    // Subdelegation rules `from` => `to`
     mapping(address from => mapping(address to => Rules subDelegationRules)) public subDelegations;
 
-    // Subdelegation rules to `to` for a single proxy owned by `from`
+    // Subdelegation rules `from` => `to`, for a specific proxy
     mapping(bytes32 proxyHash => mapping(address from => mapping(address to => Rules subDelegationRules)))
         public subDelegationsProxy;
 
