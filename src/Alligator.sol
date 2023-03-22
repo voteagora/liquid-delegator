@@ -207,10 +207,11 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
         uint8 support,
         string calldata reason
     ) external whenNotPaused {
-        address[] memory proxies = new address[](authorities.length);
+        uint256 authorityLength = authorities.length;
+        address[] memory proxies = new address[](authorityLength);
         address[] memory authority;
 
-        for (uint256 i; i < authorities.length; ) {
+        for (uint256 i; i < authorityLength; ) {
             authority = authorities[i];
             validate(msg.sender, authority, PERMISSION_VOTE, proposalId, support);
             proxies[i] = proxyAddress(authority[0]);

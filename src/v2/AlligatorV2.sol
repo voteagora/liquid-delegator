@@ -219,6 +219,8 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         string calldata reason
     ) public whenNotPaused {
         uint256 authorityLength = authorities.length;
+        require(authorityLength == proxyRules.length);
+
         address[] memory proxies = new address[](authorityLength);
         address[] memory authority;
         Rules memory rules;
@@ -259,11 +261,14 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         uint8 support,
         string calldata reason
     ) external whenNotPaused {
-        address[] memory proxies = new address[](authorities.length);
+        uint256 authorityLength = authorities.length;
+        require(authorityLength == proxyRules.length);
+
+        address[] memory proxies = new address[](authorityLength);
         address[] memory authority;
         Rules memory rules;
 
-        for (uint256 i; i < authorities.length; ) {
+        for (uint256 i; i < authorityLength; ) {
             authority = authorities[i];
             rules = proxyRules[i];
             validate(rules, msg.sender, authority, PERMISSION_VOTE, proposalId, support);
