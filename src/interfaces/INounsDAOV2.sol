@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {IGovernorBravo} from "./IGovernorBravo.sol";
 
+// IGovernorBravo extended with castRefundableVote logic and custom ProposalCondensed struct
 interface INounsDAOV2 is IGovernorBravo {
     struct ProposalCondensed {
         /// @notice Unique id for looking up a proposal
