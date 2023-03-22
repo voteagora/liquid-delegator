@@ -5,13 +5,13 @@ import {ProxyV2Payable} from "./ProxyV2Payable.sol";
 import {ENSHelper} from "../utils/ENSHelper.sol";
 import {INounsDAOV2} from "../interfaces/INounsDAOV2.sol";
 import {IRule} from "../interfaces/IRule.sol";
-import "../interfaces/IAlligatorV2.sol";
+import "../interfaces/IAlligatorV2Bravo.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
-contract AlligatorV2Nouns is IAlligatorV2, ENSHelper, Ownable, Pausable {
+contract AlligatorV2Nouns is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
     // =============================================================
     //                             ERRORS
     // =============================================================
