@@ -610,24 +610,18 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
 
     /**
      * @notice Make a proposal on the governor.
-     *
-     * @param proxy The address of the Proxy
-     * @param targets Target addresses for proposal calls
-     * @param values Eth values for proposal calls
-     * @param signatures Function signatures for proposal calls
-     * @param calldatas Calldatas for proposal calls
-     * @param description String description of the proposal
+     
      * @return ID of the created proposal
      *
      * @dev Trigger a revert unless overriden with appropriate logic.
      */
     function _propose(
-        address proxy,
-        address[] calldata targets,
-        uint256[] calldata values,
-        string[] calldata signatures,
-        bytes[] calldata calldatas,
-        string memory description
+        address,
+        address[] calldata,
+        uint256[] calldata,
+        string[] calldata,
+        bytes[] calldata,
+        string memory
     ) internal virtual returns (uint256) {
         revert("NOT_SUPPORTED");
     }
@@ -635,63 +629,38 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     /**
      * @notice Cast a vote on the governor.
      *
-     * @param proxy The address of the Proxy
-     * @param proposalId The id of the proposal to vote on
-     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
-     *
      * @dev Trigger a revert unless overriden with appropriate logic.
      */
-    function _castVote(address proxy, uint256 proposalId, uint8 support) internal virtual {
+    function _castVote(address, uint256, uint8) internal virtual {
         revert("NOT_SUPPORTED");
     }
 
     /**
      * @notice Cast a vote on the governor with reason.
      *
-     * @param proxy The address of the Proxy
-     * @param proposalId The id of the proposal to vote on
-     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
-     * @param reason The reason given for the vote by the voter
-     *
      * @dev Trigger a revert unless overriden with appropriate logic.
      */
-    function _castVoteWithReason(
-        address proxy,
-        uint256 proposalId,
-        uint8 support,
-        string calldata reason
-    ) internal virtual {
+    function _castVoteWithReason(address, uint256, uint8, string calldata) internal virtual {
         revert("NOT_SUPPORTED");
     }
 
     /**
      * @notice Cast a refundable vote on the governor with reason.
      *
-     * @param proxy The address of the Proxy
-     * @param proposalId The id of the proposal to vote on
-     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
-     * @param reason The reason given for the vote by the voter
-     *
      * @dev Trigger a revert unless overriden with appropriate logic.
      */
-    function _castRefundableVoteWithReason(
-        address proxy,
-        uint256 proposalId,
-        uint8 support,
-        string calldata reason
-    ) internal virtual {
+    function _castRefundableVoteWithReason(address, uint256, uint8, string calldata) internal virtual {
         revert("NOT_SUPPORTED");
     }
 
     /**
      * @notice Retrieve number of the proposal's end block.
      *
-     * @param proposalId The id of the proposal to vote on
      * @return Proposal's end block number.
      *
      * @dev Trigger a revert unless overriden with appropriate logic.
      */
-    function _proposalDeadline(uint256 proposalId) internal view virtual returns (uint256) {
+    function _proposalDeadline(uint256) internal view virtual returns (uint256) {
         revert("NOT_SUPPORTED");
     }
 
