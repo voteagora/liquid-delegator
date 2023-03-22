@@ -31,9 +31,9 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
 
     INounsDAOV2 public immutable governor;
 
-    uint8 internal constant PERMISSION_VOTE = 1;
-    uint8 internal constant PERMISSION_SIGN = 1 << 1;
-    uint8 internal constant PERMISSION_PROPOSE = 1 << 2;
+    uint256 internal constant PERMISSION_VOTE = 1;
+    uint256 internal constant PERMISSION_SIGN = 1 << 1;
+    uint256 internal constant PERMISSION_PROPOSE = 1 << 2;
 
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
