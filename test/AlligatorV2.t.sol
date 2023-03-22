@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
-import "../src/v2/AlligatorV2.sol";
+import "../src/v2/AlligatorV2Nouns.sol";
 import "./Utils.sol";
 import "./mock/NounsDAOMock.sol";
 import "./mock/NounsDAOAltMock.sol";
@@ -85,10 +85,10 @@ contract AlligatorV2Test is Test {
     // =============================================================
 
     CREATE3Factory _create3Factory = new CREATE3Factory();
-    AlligatorV2 public alligator;
+    AlligatorV2Nouns public alligator;
     NounsDAOMock public nounsDAO;
     address public root;
-    AlligatorV2 public alligatorAlt;
+    AlligatorV2Nouns public alligatorAlt;
     NounsDAOAltMock public nounsDAOAlt;
     address public rootAlt;
     Rules public baseRules =
@@ -105,19 +105,19 @@ contract AlligatorV2Test is Test {
         nounsDAO = new NounsDAOMock();
         nounsDAOAlt = new NounsDAOAltMock();
 
-        alligator = AlligatorV2(
+        alligator = AlligatorV2Nouns(
             payable(
                 _create3Factory.deploy(
                     keccak256(bytes("SALT")),
-                    bytes.concat(type(AlligatorV2).creationCode, abi.encode(nounsDAO, "", 0, address(this)))
+                    bytes.concat(type(AlligatorV2Nouns).creationCode, abi.encode(nounsDAO, "", 0, address(this)))
                 )
             )
         );
-        alligatorAlt = AlligatorV2(
+        alligatorAlt = AlligatorV2Nouns(
             payable(
                 _create3Factory.deploy(
                     keccak256(bytes("SALTALT")),
-                    bytes.concat(type(AlligatorV2).creationCode, abi.encode(nounsDAOAlt, "", 0, address(this)))
+                    bytes.concat(type(AlligatorV2Nouns).creationCode, abi.encode(nounsDAOAlt, "", 0, address(this)))
                 )
             )
         );
@@ -298,7 +298,7 @@ contract AlligatorV2Test is Test {
         // vm.createSelectFork(MAINNET_RPC_URL, 16770520);
         vm.createSelectFork(MAINNET_RPC_URL, 16770525);
 
-        AlligatorV2 alligatorFork = new AlligatorV2(nounsGovernor, "v2.voteagora.eth", "", address(this));
+        AlligatorV2Nouns alligatorFork = new AlligatorV2Nouns(nounsGovernor, "v2.voteagora.eth", "", address(this));
 
         // TODO: Reenable when rollFork bug is fixed
 
@@ -870,7 +870,7 @@ contract AlligatorV2Test is Test {
 
     function testRevert_validate_TooEarly() public {
         NounsDAO2Mock nounsDAO_ = new NounsDAO2Mock();
-        AlligatorV2 alligator_ = new AlligatorV2(nounsDAO_, "", 0, address(this));
+        AlligatorV2Nouns alligator_ = new AlligatorV2Nouns(nounsDAO_, "", 0, address(this));
         alligator_.create(address(this), baseRules, true);
 
         address[] memory authority = new address[](2);

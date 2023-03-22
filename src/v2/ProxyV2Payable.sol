@@ -6,8 +6,8 @@ import {IENSReverseRegistrar} from "../interfaces/IENSReverseRegistrar.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import "../structs/Rules.sol";
 
-// Proxy implementation that cannot handle gas refunds from governor
-contract ProxyV2 is IERC1271 {
+// Proxy implementation that handles gas refunds from governor
+contract ProxyV2Payable is IERC1271 {
     address internal immutable alligator;
     address internal immutable governor;
 
@@ -79,5 +79,10 @@ contract ProxyV2 is IERC1271 {
         }
     }
 
-    // receive is omitted to minimize contract size.
+    // If funds are received from the governor, send them back to the caller.
+    receive() external payable {
+        require(msg.sender == governor);
+        (bool success, ) = payable(tx.origin).call{value: msg.value}("");
+        require(success);
+    }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
-import "../src/Alligator.sol";
+import "../src/v1/Alligator.sol";
 import "./Utils.sol";
 import "./mock/NounsDAOMock.sol";
 import "./mock/NounsDAO2Mock.sol";

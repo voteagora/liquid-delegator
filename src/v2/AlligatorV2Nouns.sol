@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {ProxyV2} from "./ProxyV2.sol";
+import {ProxyV2Payable} from "./ProxyV2Payable.sol";
 import {ENSHelper} from "../utils/ENSHelper.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {INounsDAOV2} from "../interfaces/INounsDAOV2.sol";
 import {IRule} from "../interfaces/IRule.sol";
+import "../interfaces/IAlligatorV2.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import "../interfaces/IAlligatorV2.sol";
 
-contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
+contract AlligatorV2Nouns is IAlligatorV2, ENSHelper, Ownable, Pausable {
     // =============================================================
     //                             ERRORS
     // =============================================================
@@ -82,7 +82,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      */
     function create(address owner, Rules calldata proxyRules, bool registerEnsName) public returns (address endpoint) {
         endpoint = address(
-            new ProxyV2{salt: bytes32(uint256(uint160(owner)))}(
+            new ProxyV2Payable{salt: bytes32(uint256(uint160(owner)))}(
                 address(governor),
                 proxyRules.permissions,
                 proxyRules.maxRedelegations,
@@ -97,7 +97,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         if (registerEnsName) {
             if (ensNameHash != 0) {
                 string memory reverseName = registerDeployment(endpoint);
-                ProxyV2(payable(endpoint)).setENSReverseRecord(reverseName);
+                ProxyV2Payable(payable(endpoint)).setENSReverseRecord(reverseName);
             }
         }
     }
@@ -114,7 +114,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
         if (ensNameHash != 0) {
             address proxy = proxyAddress(owner, proxyRules);
             string memory reverseName = registerDeployment(proxy);
-            ProxyV2(payable(proxy)).setENSReverseRecord(reverseName);
+            ProxyV2Payable(payable(proxy)).setENSReverseRecord(reverseName);
         }
     }
 
@@ -548,7 +548,7 @@ contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
                             bytes32(uint256(uint160(owner))), // salt
                             keccak256(
                                 abi.encodePacked(
-                                    type(ProxyV2).creationCode,
+                                    type(ProxyV2Payable).creationCode,
                                     abi.encode(
                                         address(governor),
                                         proxyRules.permissions,

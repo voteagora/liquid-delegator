@@ -2,14 +2,14 @@
 pragma solidity ^0.8.13;
 
 import {Proxy} from "./Proxy.sol";
-import {ENSHelper} from "./utils/ENSHelper.sol";
+import {ENSHelper} from "../utils/ENSHelper.sol";
+import {INounsDAOV2} from "../interfaces/INounsDAOV2.sol";
+import {IRule} from "../interfaces/IRule.sol";
+import "../interfaces/IAlligator.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {INounsDAOV2} from "./interfaces/INounsDAOV2.sol";
-import {IRule} from "./interfaces/IRule.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import "./interfaces/IAlligator.sol";
 
 contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
     // =============================================================

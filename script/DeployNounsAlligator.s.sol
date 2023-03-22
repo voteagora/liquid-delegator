@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import {Alligator} from "../src/Alligator.sol";
+import {Alligator} from "../src/v1/Alligator.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 
 contract DeployNounsAlligatorScript is Script {
