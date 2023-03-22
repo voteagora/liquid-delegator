@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import {CREATE3Factory} from "create3-factory/CREATE3Factory.sol";
-import {AlligatorV2Nouns} from "../src/v2/AlligatorV2Nouns.sol";
+import {AlligatorV2Nouns} from "../src/v2/extensions/AlligatorV2Nouns.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {ENSNamehash} from "../src/utils/ENSNamehash.sol";
 

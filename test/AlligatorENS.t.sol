@@ -7,7 +7,7 @@ import {ENSNamehash} from "../src/utils/ENSNamehash.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import "../src/v1/Alligator.sol";
-import "../src/v2/AlligatorV2Nouns.sol";
+import "../src/v2/extensions/AlligatorV2Nouns.sol";
 import "./Utils.sol";
 
 contract AlligatorENSTest is Test {
@@ -63,12 +63,7 @@ contract AlligatorENSTest is Test {
         vm.createSelectFork(MAINNET_RPC_URL, 16651000);
 
         bytes32 ensNameHash = ENSNamehash.namehash("v2.voteagora.eth");
-        AlligatorV2Nouns alligator = new AlligatorV2Nouns(
-            INounsDAOV2(address(0)),
-            "v2.voteagora.eth",
-            ensNameHash,
-            address(this)
-        );
+        AlligatorV2Nouns alligator = new AlligatorV2Nouns(address(0), "v2.voteagora.eth", ensNameHash, address(this));
 
         vm.prank(ensOwner);
         ens.setSubnodeOwner(

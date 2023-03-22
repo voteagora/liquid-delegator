@@ -4,15 +4,15 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
-import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
-import "../src/v2/AlligatorV2Nouns.sol";
-import "./Utils.sol";
-import "./mock/NounsDAOMock.sol";
-import "./mock/NounsDAOAltMock.sol";
-import "./mock/NounsDAO2Mock.sol";
+import {IGovernorBravo} from "src/interfaces/IGovernorBravo.sol";
+import "src/v2/extensions/AlligatorV2Nouns.sol";
+import "../Utils.sol";
+import "../mock/NounsDAOMock.sol";
+import "../mock/NounsDAOAltMock.sol";
+import "../mock/NounsDAO2Mock.sol";
 import {CREATE3Factory} from "create3-factory/CREATE3Factory.sol";
 
-contract AlligatorV2Test is Test {
+contract SetupV2 is Test {
     // =============================================================
     //                  ERRORS & EVENTS & CONSTANTS
     // =============================================================
@@ -68,20 +68,8 @@ contract AlligatorV2Test is Test {
 
     bytes32 internal constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
-    /// @notice The maximum priority fee used to cap gas refunds in `castRefundableVote`
-    uint256 public constant MAX_REFUND_PRIORITY_FEE = 2 gwei;
-
-    /// @notice The vote refund gas overhead, including 7K for ETH transfer and 29K for general transaction overhead
-    uint256 public constant REFUND_BASE_GAS = 36000;
-
-    /// @notice The maximum gas units the DAO will refund voters on; supports about 9,190 characters
-    uint256 public constant MAX_REFUND_GAS_USED = 200_000;
-
-    /// @notice The maximum basefee the DAO will refund voters on
-    uint256 public constant MAX_REFUND_BASE_FEE = 200 gwei;
-
     // =============================================================
-    //                             TESTS
+    //                            STORAGE
     // =============================================================
 
     CREATE3Factory _create3Factory = new CREATE3Factory();
@@ -101,6 +89,10 @@ contract AlligatorV2Test is Test {
             address(0)
         );
 
+    // =============================================================
+    //                             SETUP
+    // =============================================================
+
     function setUp() public {
         nounsDAO = new NounsDAOMock();
         nounsDAOAlt = new NounsDAOAltMock();
@@ -109,7 +101,10 @@ contract AlligatorV2Test is Test {
             payable(
                 _create3Factory.deploy(
                     keccak256(bytes("SALT")),
-                    bytes.concat(type(AlligatorV2Nouns).creationCode, abi.encode(nounsDAO, "", 0, address(this)))
+                    bytes.concat(
+                        type(AlligatorV2Nouns).creationCode,
+                        abi.encode(address(nounsDAO), "", 0, address(this))
+                    )
                 )
             )
         );
@@ -117,7 +112,10 @@ contract AlligatorV2Test is Test {
             payable(
                 _create3Factory.deploy(
                     keccak256(bytes("SALTALT")),
-                    bytes.concat(type(AlligatorV2Nouns).creationCode, abi.encode(nounsDAOAlt, "", 0, address(this)))
+                    bytes.concat(
+                        type(AlligatorV2Nouns).creationCode,
+                        abi.encode(address(nounsDAOAlt), "", 0, address(this))
+                    )
                 )
             )
         );
@@ -298,7 +296,12 @@ contract AlligatorV2Test is Test {
         // vm.createSelectFork(MAINNET_RPC_URL, 16770520);
         vm.createSelectFork(MAINNET_RPC_URL, 16770525);
 
-        AlligatorV2Nouns alligatorFork = new AlligatorV2Nouns(nounsGovernor, "v2.voteagora.eth", "", address(this));
+        AlligatorV2Nouns alligatorFork = new AlligatorV2Nouns(
+            address(nounsGovernor),
+            "v2.voteagora.eth",
+            "",
+            address(this)
+        );
 
         // TODO: Reenable when rollFork bug is fixed
 
@@ -870,7 +873,7 @@ contract AlligatorV2Test is Test {
 
     function testRevert_validate_TooEarly() public {
         NounsDAO2Mock nounsDAO_ = new NounsDAO2Mock();
-        AlligatorV2Nouns alligator_ = new AlligatorV2Nouns(nounsDAO_, "", 0, address(this));
+        AlligatorV2Nouns alligator_ = new AlligatorV2Nouns(address(nounsDAO_), "", 0, address(this));
         alligator_.create(address(this), baseRules, true);
 
         address[] memory authority = new address[](2);

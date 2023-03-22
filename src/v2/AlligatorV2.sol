@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {ProxyV2Payable} from "./ProxyV2Payable.sol";
-import {ENSHelper} from "../utils/ENSHelper.sol";
-import {IGovernorBravoExtended} from "../interfaces/IGovernorBravoExtended.sol";
+import {ProxyV2} from "./ProxyV2.sol";
+import {Rules} from "../structs/Rules.sol";
+import {IAlligatorV2} from "../interfaces/IAlligatorV2.sol";
 import {IRule} from "../interfaces/IRule.sol";
-import "../interfaces/IAlligatorV2Bravo.sol";
+import {ENSHelper} from "../utils/ENSHelper.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
-contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
+contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
     // =============================================================
     //                             ERRORS
     // =============================================================
@@ -26,10 +26,47 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
     error InvalidCustomRule(address from, address to, address customRule);
 
     // =============================================================
+    //                             EVENTS
+    // =============================================================
+
+    event ProxyDeployed(address indexed owner, Rules proxyRules, address proxy);
+    event SubDelegation(address indexed from, address indexed to, Rules subDelegateRules);
+    event SubDelegations(address indexed from, address[] to, Rules[] subDelegateRules);
+    event SubDelegationProxy(
+        address indexed from,
+        address indexed to,
+        Rules subDelegateRules,
+        address indexed proxyOwner,
+        Rules proxyRules
+    );
+    event SubDelegationProxies(
+        address indexed from,
+        address[] to,
+        Rules[] subDelegateRules,
+        address indexed proxyOwner,
+        Rules proxyRules
+    );
+    event VoteCast(
+        address indexed proxy,
+        address indexed voter,
+        address[] authority,
+        uint256 proposalId,
+        uint8 support
+    );
+    event VotesCast(
+        address[] proxies,
+        address indexed voter,
+        address[][] authorities,
+        uint256 proposalId,
+        uint8 support
+    );
+    event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
+
+    // =============================================================
     //                       IMMUTABLE STORAGE
     // =============================================================
 
-    IGovernorBravoExtended public immutable governor;
+    address public immutable governor;
 
     uint256 internal constant PERMISSION_VOTE = 1;
     uint256 internal constant PERMISSION_SIGN = 1 << 1;
@@ -58,7 +95,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
     // =============================================================
 
     constructor(
-        IGovernorBravoExtended _governor,
+        address _governor,
         string memory _ensName,
         bytes32 _ensNameHash,
         address _initOwner
@@ -82,8 +119,8 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
      */
     function create(address owner, Rules calldata proxyRules, bool registerEnsName) public returns (address endpoint) {
         endpoint = address(
-            new ProxyV2Payable{salt: bytes32(uint256(uint160(owner)))}(
-                address(governor),
+            new ProxyV2{salt: bytes32(uint256(uint160(owner)))}(
+                governor,
                 proxyRules.permissions,
                 proxyRules.maxRedelegations,
                 proxyRules.notValidBefore,
@@ -97,7 +134,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
         if (registerEnsName) {
             if (ensNameHash != 0) {
                 string memory reverseName = registerDeployment(endpoint);
-                ProxyV2Payable(payable(endpoint)).setENSReverseRecord(reverseName);
+                ProxyV2(payable(endpoint)).setENSReverseRecord(reverseName);
             }
         }
     }
@@ -114,7 +151,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
         if (ensNameHash != 0) {
             address proxy = proxyAddress(owner, proxyRules);
             string memory reverseName = registerDeployment(proxy);
-            ProxyV2Payable(payable(proxy)).setENSReverseRecord(reverseName);
+            ProxyV2(payable(proxy)).setENSReverseRecord(reverseName);
         }
     }
 
@@ -148,7 +185,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
     ) external whenNotPaused returns (uint256 proposalId) {
         address proxy = proxyAddress(authority[0], proxyRules);
         // Create a proposal first so the custom rules can validate it
-        proposalId = IGovernorBravoExtended(proxy).propose(targets, values, signatures, calldatas, description);
+        proposalId = _propose(proxy, targets, values, signatures, calldatas, description);
         validate(proxyRules, msg.sender, authority, PERMISSION_PROPOSE, proposalId, 0xFF);
     }
 
@@ -171,7 +208,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
         validate(proxyRules, msg.sender, authority, PERMISSION_VOTE, proposalId, support);
 
         address proxy = proxyAddress(authority[0], proxyRules);
-        IGovernorBravoExtended(proxy).castVote(proposalId, support);
+        _castVote(proxy, proposalId, support);
         emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
 
@@ -196,7 +233,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
         validate(proxyRules, msg.sender, authority, PERMISSION_VOTE, proposalId, support);
 
         address proxy = proxyAddress(authority[0], proxyRules);
-        IGovernorBravoExtended(proxy).castVoteWithReason(proposalId, support, reason);
+        _castVoteWithReason(proxy, proposalId, support, reason);
         emit VoteCast(proxy, msg.sender, authority, proposalId, support);
     }
 
@@ -230,7 +267,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
             rules = proxyRules[i];
             validate(rules, msg.sender, authority, PERMISSION_VOTE, proposalId, support);
             proxies[i] = proxyAddress(authority[0], rules);
-            IGovernorBravoExtended(proxies[i]).castVoteWithReason(proposalId, support, reason);
+            _castVoteWithReason(proxies[i], proposalId, support, reason);
 
             unchecked {
                 ++i;
@@ -273,7 +310,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
             rules = proxyRules[i];
             validate(rules, msg.sender, authority, PERMISSION_VOTE, proposalId, support);
             proxies[i] = proxyAddress(authority[0], rules);
-            IGovernorBravoExtended(proxies[i]).castRefundableVoteWithReason(proposalId, support, reason);
+            _castRefundableVoteWithReason(proxies[i], proposalId, support, reason);
 
             unchecked {
                 ++i;
@@ -316,7 +353,7 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
         validate(proxyRules, signatory, authority, PERMISSION_VOTE, proposalId, support);
 
         address proxy = proxyAddress(authority[0], proxyRules);
-        IGovernorBravoExtended(proxy).castVote(proposalId, support);
+        _castVote(proxy, proposalId, support);
         emit VoteCast(proxy, signatory, authority, proposalId, support);
     }
 
@@ -548,9 +585,9 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
                             bytes32(uint256(uint160(owner))), // salt
                             keccak256(
                                 abi.encodePacked(
-                                    type(ProxyV2Payable).creationCode,
+                                    type(ProxyV2).creationCode,
                                     abi.encode(
-                                        address(governor),
+                                        governor,
                                         proxyRules.permissions,
                                         proxyRules.maxRedelegations,
                                         proxyRules.notValidBefore,
@@ -568,7 +605,98 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
     }
 
     // =============================================================
-    //                  RESTRICTED, INTERNAL, OTHER
+    //                   CUSTOM GOVERNOR FUNCTIONS
+    // =============================================================
+
+    /**
+     * @notice Make a proposal on the governor.
+     *
+     * @param proxy The address of the Proxy
+     * @param targets Target addresses for proposal calls
+     * @param values Eth values for proposal calls
+     * @param signatures Function signatures for proposal calls
+     * @param calldatas Calldatas for proposal calls
+     * @param description String description of the proposal
+     * @return ID of the created proposal
+     *
+     * @dev Trigger a revert unless overriden with appropriate logic.
+     */
+    function _propose(
+        address proxy,
+        address[] calldata targets,
+        uint256[] calldata values,
+        string[] calldata signatures,
+        bytes[] calldata calldatas,
+        string memory description
+    ) internal virtual returns (uint256) {
+        revert("NOT_SUPPORTED");
+    }
+
+    /**
+     * @notice Cast a vote on the governor.
+     *
+     * @param proxy The address of the Proxy
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     *
+     * @dev Trigger a revert unless overriden with appropriate logic.
+     */
+    function _castVote(address proxy, uint256 proposalId, uint8 support) internal virtual {
+        revert("NOT_SUPPORTED");
+    }
+
+    /**
+     * @notice Cast a vote on the governor with reason.
+     *
+     * @param proxy The address of the Proxy
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param reason The reason given for the vote by the voter
+     *
+     * @dev Trigger a revert unless overriden with appropriate logic.
+     */
+    function _castVoteWithReason(
+        address proxy,
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) internal virtual {
+        revert("NOT_SUPPORTED");
+    }
+
+    /**
+     * @notice Cast a refundable vote on the governor with reason.
+     *
+     * @param proxy The address of the Proxy
+     * @param proposalId The id of the proposal to vote on
+     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param reason The reason given for the vote by the voter
+     *
+     * @dev Trigger a revert unless overriden with appropriate logic.
+     */
+    function _castRefundableVoteWithReason(
+        address proxy,
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) internal virtual {
+        revert("NOT_SUPPORTED");
+    }
+
+    /**
+     * @notice Retrieve number of the proposal's end block.
+     *
+     * @param proposalId The id of the proposal to vote on
+     * @return Proposal's end block number.
+     *
+     * @dev Trigger a revert unless overriden with appropriate logic.
+     */
+    function _proposalDeadline(uint256 proposalId) internal view virtual returns (uint256) {
+        revert("NOT_SUPPORTED");
+    }
+
+    // =============================================================
+    //                     RESTRICTED, INTERNAL
     // =============================================================
 
     /**
@@ -611,14 +739,13 @@ contract AlligatorV2Bravo is IAlligatorV2Bravo, ENSHelper, Ownable, Pausable {
                 if (block.timestamp > rules.notValidAfter) revert NotValidAnymore(from, to, rules.notValidAfter);
             }
             if (rules.blocksBeforeVoteCloses != 0) {
-                IGovernorBravoExtended.Proposal memory proposal = governor.proposals(proposalId);
-                if (proposal.endBlock > uint256(block.number) + uint256(rules.blocksBeforeVoteCloses)) {
+                if (_proposalDeadline(proposalId) > uint256(block.number) + uint256(rules.blocksBeforeVoteCloses)) {
                     revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
                 }
             }
             if (rules.customRule != address(0)) {
                 if (
-                    IRule(rules.customRule).validate(address(governor), sender, proposalId, uint8(support)) !=
+                    IRule(rules.customRule).validate(governor, sender, proposalId, uint8(support)) !=
                     IRule.validate.selector
                 ) {
                     revert InvalidCustomRule(from, to, rules.customRule);
