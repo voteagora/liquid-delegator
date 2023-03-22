@@ -3,7 +3,8 @@ pragma solidity ^0.8.13;
 
 import {INounsDAOV2} from "src/interfaces/INounsDAOV2.sol";
 
-contract NounsDAOMock is INounsDAOV2 {
+// Like `NounsDAOMock` but which refunds msg.sender instead of tx.origin
+contract NounsDAOAltMock is INounsDAOV2 {
     /// @notice Emitted when a voter cast a vote requesting a gas refund.
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
     event VoteCast(address voter, uint256 proposalId, uint8 support, uint256 votes);
@@ -109,8 +110,8 @@ contract NounsDAOMock is INounsDAOV2 {
             uint256 gasPrice = min(tx.gasprice, basefee + MAX_REFUND_PRIORITY_FEE);
             uint256 gasUsed = min(startGas - gasleft() + REFUND_BASE_GAS, MAX_REFUND_GAS_USED);
             uint256 refundAmount = min(gasPrice * gasUsed, balance);
-            (bool refundSent, ) = tx.origin.call{value: refundAmount}("");
-            emit RefundableVote(tx.origin, refundAmount, refundSent);
+            (bool refundSent, ) = msg.sender.call{value: refundAmount}("");
+            emit RefundableVote(msg.sender, refundAmount, refundSent);
         }
     }
 

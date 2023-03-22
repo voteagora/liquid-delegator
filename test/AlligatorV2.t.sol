@@ -3,10 +3,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
 import "../src/v2/AlligatorV2.sol";
 import "./Utils.sol";
 import "./mock/NounsDAOMock.sol";
+import "./mock/NounsDAOAltMock.sol";
 import "./mock/NounsDAO2Mock.sol";
 import {CREATE3Factory} from "create3-factory/CREATE3Factory.sol";
 
@@ -16,6 +18,7 @@ contract AlligatorV2Test is Test {
     // =============================================================
 
     error BadSignature();
+    error InvalidAuthorityChain();
     error NotDelegated(address from, address to, uint256 requiredPermissions);
     error TooManyRedelegations(address from, address to);
     error NotValidYet(address from, address to, uint256 willBeValidFrom);
@@ -55,7 +58,6 @@ contract AlligatorV2Test is Test {
         uint8 support
     );
     event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
-    event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
 
     uint8 internal constant PERMISSION_VOTE = 1;
     uint8 internal constant PERMISSION_SIGN = 1 << 1;
@@ -86,6 +88,9 @@ contract AlligatorV2Test is Test {
     AlligatorV2 public alligator;
     NounsDAOMock public nounsDAO;
     address public root;
+    AlligatorV2 public alligatorAlt;
+    NounsDAOAltMock public nounsDAOAlt;
+    address public rootAlt;
     Rules public baseRules =
         Rules(
             7, // All permissions
@@ -98,6 +103,7 @@ contract AlligatorV2Test is Test {
 
     function setUp() public {
         nounsDAO = new NounsDAOMock();
+        nounsDAOAlt = new NounsDAOAltMock();
 
         alligator = AlligatorV2(
             payable(
@@ -107,8 +113,17 @@ contract AlligatorV2Test is Test {
                 )
             )
         );
+        alligatorAlt = AlligatorV2(
+            payable(
+                _create3Factory.deploy(
+                    keccak256(bytes("SALTALT")),
+                    bytes.concat(type(AlligatorV2).creationCode, abi.encode(nounsDAOAlt, "", 0, address(this)))
+                )
+            )
+        );
 
         root = alligator.create(address(this), baseRules, true); // selfProxy
+        rootAlt = alligatorAlt.create(address(this), baseRules, true); // selfProxy
     }
 
     function testDeploy() public {
@@ -181,22 +196,138 @@ contract AlligatorV2Test is Test {
     }
 
     // Run `forge test` with --gas-price param to set the gas price
-    function testCastRefundableVotesWithReasonBatched() public {
-        uint256 initBalance = 1 ether;
-        payable(address(alligator)).transfer(initBalance);
+    function testCastRefundableVotesWithReasonBatched_withTxOrigin() public {
+        uint256 refundAmount = 206108 * tx.gasprice;
+        vm.deal(address(nounsDAO), 1 ether);
 
         (address[][] memory authorities, , Rules[] memory proxyRules) = _formatBatchData();
 
-        uint256 refundAmount = 200000 * tx.gasprice;
-        vm.prank(Utils.carol);
-        vm.expectEmit(true, false, false, true);
-        emit RefundableVote(Utils.carol, refundAmount, true);
+        vm.prank(Utils.carol, Utils.carol);
         alligator.castRefundableVotesWithReasonBatched{gas: 1e9}(proxyRules, authorities, 1, 1, "");
 
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(address(this), baseRules)), true);
         assertEq(nounsDAO.hasVoted(alligator.proxyAddress(Utils.bob, baseRules)), true);
         assertEq(nounsDAO.totalVotes(), 2);
-        assertEq(address(alligator).balance, initBalance - refundAmount);
+        assertEq(Utils.carol.balance, refundAmount);
+    }
+
+    // Run `forge test` with --gas-price param to set the gas price
+    function testCastRefundableVotesWithReasonBatched_withMsgSender() public {
+        uint256 refundAmount = 206108 * tx.gasprice;
+        vm.deal(address(nounsDAOAlt), 1 ether);
+
+        address[] memory authority1 = new address[](4);
+        authority1[0] = address(this);
+        authority1[1] = Utils.alice;
+        authority1[2] = Utils.bob;
+        authority1[3] = Utils.carol;
+
+        address[] memory authority2 = new address[](2);
+        authority2[0] = Utils.bob;
+        authority2[1] = Utils.carol;
+
+        address[][] memory authorities = new address[][](2);
+        authorities[0] = authority1;
+        authorities[1] = authority2;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 255,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        alligatorAlt.subDelegate(address(this), baseRules, Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligatorAlt.subDelegate(address(this), baseRules, Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligatorAlt.subDelegate(address(this), baseRules, Utils.carol, rules);
+        vm.prank(Utils.bob);
+        alligatorAlt.subDelegate(Utils.bob, baseRules, Utils.carol, rules);
+
+        Rules[] memory proxyRules = new Rules[](2);
+        proxyRules[0] = baseRules;
+        proxyRules[1] = baseRules;
+
+        vm.prank(Utils.carol, Utils.carol);
+        alligatorAlt.castRefundableVotesWithReasonBatched{gas: 1e9}(proxyRules, authorities, 1, 1, "");
+
+        assertEq(nounsDAOAlt.hasVoted(alligatorAlt.proxyAddress(address(this), baseRules)), true);
+        assertEq(nounsDAOAlt.hasVoted(alligatorAlt.proxyAddress(Utils.bob, baseRules)), true);
+        assertEq(nounsDAOAlt.totalVotes(), 2);
+        assertEq(Utils.carol.balance, refundAmount);
+    }
+
+    // Run `forge test` with --gas-price param to set the gas price
+    function testCastRefundableVotesWithReasonBatched_mainnetFork() public {
+        INounsDAOV2 nounsGovernor = INounsDAOV2(0x6f3E6272A167e8AcCb32072d08E0957F9c79223d);
+        DelegateToken nounsToken = DelegateToken(0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03);
+        vm.deal(address(nounsGovernor), 1 ether);
+        address nounders = 0x2573C60a6D127755aA2DC85e342F7da2378a0Cc5;
+
+        address[] memory authority1 = new address[](4);
+        authority1[0] = address(this);
+        authority1[1] = Utils.alice;
+        authority1[2] = Utils.bob;
+        authority1[3] = nounders;
+
+        address[] memory authority2 = new address[](2);
+        authority2[0] = Utils.bob;
+        authority2[1] = nounders;
+
+        address[][] memory authorities = new address[][](2);
+        authorities[0] = authority1;
+        authorities[1] = authority2;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 255,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 0,
+            customRule: address(0)
+        });
+
+        Rules[] memory proxyRules = new Rules[](2);
+        proxyRules[0] = baseRules;
+        proxyRules[1] = baseRules;
+
+        string memory MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+        // vm.createSelectFork(MAINNET_RPC_URL, 16770520);
+        vm.createSelectFork(MAINNET_RPC_URL, 16770525);
+
+        AlligatorV2 alligatorFork = new AlligatorV2(nounsGovernor, "v2.voteagora.eth", "", address(this));
+
+        // TODO: Reenable when rollFork bug is fixed
+
+        // uint256 refundAmount = 206108 * tx.gasprice;
+        // uint256 startBalance = nounders.balance;
+
+        // nounsToken.delegate(alligatorFork.proxyAddress(address(this), baseRules));
+        // vm.prank(Utils.bob);
+        // nounsToken.delegate(alligatorFork.proxyAddress(Utils.bob, baseRules));
+
+        // vm.rollFork(16770525);
+
+        alligatorFork.subDelegate(address(this), baseRules, Utils.alice, rules);
+        vm.prank(Utils.alice);
+        alligatorFork.subDelegate(address(this), baseRules, Utils.bob, rules);
+        vm.prank(Utils.bob);
+        alligatorFork.subDelegate(address(this), baseRules, nounders, rules);
+        vm.prank(Utils.bob);
+        alligatorFork.subDelegate(Utils.bob, baseRules, nounders, rules);
+
+        vm.prank(nounders);
+        nounsToken.transferFrom(nounders, address(this), 580);
+        vm.prank(nounders);
+        nounsToken.transferFrom(nounders, Utils.bob, 590);
+
+        vm.prank(nounders, nounders);
+        alligatorFork.castRefundableVotesWithReasonBatched{gas: 1e9}(proxyRules, authorities, 245, 1, "reason");
+
+        // assertEq(nounders.balance, startBalance + refundAmount);
     }
 
     function testPropose() public {
@@ -540,7 +671,7 @@ contract AlligatorV2Test is Test {
         assertEq(IERC1271(root).isValidSignature(hash1, ""), bytes4(0));
     }
 
-    function testOffchainSignatures() public {
+    function testIsValidSignature() public {
         uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
         address signer = vm.addr(privateKey);
         bytes32 hash1 = keccak256(abi.encodePacked("data"));
@@ -579,6 +710,28 @@ contract AlligatorV2Test is Test {
         // Different hash means erecover returns a different user
         vm.expectRevert();
         IERC1271(root).isValidSignature(hash2, data);
+    }
+
+    function testIsValidSignature_signingBug() public {
+        // create an address from private key = 0x01 that should have no authority
+        uint PRIVATE_KEY = 1;
+        address signer = vm.addr(PRIVATE_KEY);
+
+        // sign any message with that private key
+        bytes32 hash = keccak256(abi.encodePacked("i can make you sign anything"));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, hash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // set the authority chain to be only my own address
+        address[] memory authority = new address[](1);
+        authority[0] = signer;
+
+        // create the signature data, which consists of authority chain and signature
+        bytes memory digest = abi.encode(authority, signature);
+
+        // confirm that the call is reverted with `InvalidAuthorityChain()`
+        vm.expectRevert(InvalidAuthorityChain.selector);
+        IERC1271(root).isValidSignature(hash, digest);
     }
 
     function testPause() public {
@@ -791,4 +944,8 @@ contract AlligatorV2Test is Test {
         proxyRules[0] = baseRules;
         proxyRules[1] = baseRules;
     }
+}
+
+interface DelegateToken is IERC721 {
+    function delegate(address delegatee) external;
 }
