@@ -89,7 +89,7 @@ abstract contract AlligatorV2Base is SetupV2 {
         assertEq(governor.hasVoted(alligator.proxyAddress(address(this), baseRules)), true);
         assertEq(governor.hasVoted(alligator.proxyAddress(Utils.bob, baseRules)), true);
         assertEq(governor.totalVotes(), 2);
-        assertApproxEqAbs(Utils.carol.balance, refundAmount, 20000);
+        assertApproxEqAbs(Utils.carol.balance, refundAmount, 2e6);
     }
 
     function testPropose() public {

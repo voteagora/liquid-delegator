@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {IGovernorOpenExtended} from "src/interfaces/IGovernorOpenExtended.sol";
 import {IGovernorMock} from "./IGovernorMock.sol";
+import "@openzeppelin/contracts/utils/Timers.sol";
 
 contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
     // =============================================================
@@ -10,7 +11,15 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
     // =============================================================
     /// @notice Emitted when a voter cast a vote requesting a gas refund.
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
-    event VoteCast(address voter, uint256 proposalId, uint8 support, uint256 votes);
+
+    using Timers for Timers.BlockNumber;
+
+    struct ProposalCore {
+        Timers.BlockNumber voteStart;
+        Timers.BlockNumber voteEnd;
+        bool executed;
+        bool canceled;
+    }
 
     /// @notice The maximum priority fee used to cap gas refunds in `castRefundableVote`
     uint256 public constant MAX_REFUND_PRIORITY_FEE = 2 gwei;
@@ -29,6 +38,12 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
     uint256 public lastSupport;
     uint256 public totalVotes;
     mapping(address => bool) public _hasVoted;
+
+    mapping(uint256 => ProposalCore) private _proposals;
+
+    constructor() {
+        _proposals[1].voteEnd.setDeadline(101);
+    }
 
     // =============================================================
     //                        GOVERNOR STANDARD
@@ -49,10 +64,12 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
 
     function state(uint256 proposalId) public view override returns (ProposalState) {}
 
-    function proposalSnapshot(uint256 proposalId) public view override returns (uint256) {}
+    function proposalSnapshot(uint256 proposalId) public view override returns (uint256) {
+        return _proposals[proposalId].voteStart.getDeadline();
+    }
 
-    function proposalDeadline(uint256) public view override returns (uint256) {
-        return block.number + 100;
+    function proposalDeadline(uint256 proposalId) public view override returns (uint256) {
+        return _proposals[proposalId].voteEnd.getDeadline();
     }
 
     function votingDelay() public view override returns (uint256) {}
@@ -97,10 +114,14 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
         lastSupport = support;
         totalVotes += 1;
         _hasVoted[msg.sender] = true;
-        emit VoteCast(msg.sender, proposalId, support, 0);
+        emit VoteCast(msg.sender, proposalId, support, 0, "");
     }
 
-    function castVoteWithReason(uint256 proposalId, uint8 support, string calldata) public override returns (uint256) {
+    function castVoteWithReason(
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) public override returns (uint256) {
         require(support <= 2, "castVoteInternal: invalid vote type");
         require(_hasVoted[msg.sender] == false, "castVoteInternal: voter already voted");
 
@@ -109,7 +130,7 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
         lastSupport = support;
         totalVotes += 1;
         _hasVoted[msg.sender] = true;
-        emit VoteCast(msg.sender, proposalId, support, 0);
+        emit VoteCast(msg.sender, proposalId, support, 0, reason);
     }
 
     function castVoteWithReasonAndParams(
@@ -147,7 +168,7 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
 
     function castRefundableVote(uint256 proposalId, uint8 support) external override {}
 
-    function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata) external override {
+    function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external override {
         require(support <= 2, "castVoteInternal: invalid vote type");
         require(_hasVoted[msg.sender] == false, "castVoteInternal: voter already voted");
         uint256 startGas = gasleft();
@@ -157,7 +178,7 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
         lastSupport = support;
         totalVotes += 1;
         _hasVoted[msg.sender] = true;
-        emit VoteCast(msg.sender, proposalId, support, 0);
+        emit VoteCast(msg.sender, proposalId, support, 0, reason);
 
         _refundGas(startGas);
     }
