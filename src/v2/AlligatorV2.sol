@@ -618,8 +618,6 @@ abstract contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @param calldatas Calldatas for proposal calls
      * @param description String description of the proposal
      * @return proposalId ID of the created proposal
-     *
-     * @dev Trigger a revert unless overriden with appropriate logic.
      */
     function _propose(
         address proxy,
@@ -636,8 +634,6 @@ abstract contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @param proxy The address of the Proxy
      * @param proposalId The id of the proposal to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
-     *
-     * @dev Trigger a revert unless overriden with appropriate logic.
      */
     function _castVote(address proxy, uint256 proposalId, uint8 support) internal virtual;
 
@@ -648,8 +644,6 @@ abstract contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @param proposalId The id of the proposal to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      * @param reason The reason given for the vote by the voter
-     *
-     * @dev Trigger a revert unless overriden with appropriate logic.
      */
     function _castVoteWithReason(
         address proxy,
@@ -665,8 +659,6 @@ abstract contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @param proposalId The id of the proposal to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      * @param reason The reason given for the vote by the voter
-     *
-     * @dev Trigger a revert unless overriden with appropriate logic.
      */
     function _castRefundableVoteWithReason(
         address proxy,
@@ -680,8 +672,6 @@ abstract contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      *
      * @param proposalId The id of the proposal to vote on
      * @return endBlock Proposal's end block number
-     *
-     * @dev Trigger a revert unless overriden with appropriate logic.
      */
     function _proposalEndBlock(uint256 proposalId) internal view virtual returns (uint256 endBlock);
 
