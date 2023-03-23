@@ -679,11 +679,11 @@ abstract contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
      * @notice Retrieve number of the proposal's end block.
      *
      * @param proposalId The id of the proposal to vote on
-     * @return endBlock Proposal's end block number.
+     * @return endBlock Proposal's end block number
      *
      * @dev Trigger a revert unless overriden with appropriate logic.
      */
-    function _proposalDeadline(uint256 proposalId) internal view virtual returns (uint256 endBlock);
+    function _proposalEndBlock(uint256 proposalId) internal view virtual returns (uint256 endBlock);
 
     // =============================================================
     //                     RESTRICTED, INTERNAL
@@ -729,7 +729,7 @@ abstract contract AlligatorV2 is IAlligatorV2, ENSHelper, Ownable, Pausable {
                 if (block.timestamp > rules.notValidAfter) revert NotValidAnymore(from, to, rules.notValidAfter);
             }
             if (rules.blocksBeforeVoteCloses != 0) {
-                if (_proposalDeadline(proposalId) > uint256(block.number) + uint256(rules.blocksBeforeVoteCloses)) {
+                if (_proposalEndBlock(proposalId) > uint256(block.number) + uint256(rules.blocksBeforeVoteCloses)) {
                     revert TooEarly(from, to, rules.blocksBeforeVoteCloses);
                 }
             }

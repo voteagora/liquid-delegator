@@ -93,7 +93,7 @@ contract AlligatorV2Bravo is AlligatorV2 {
      * @param proposalId The id of the proposal to vote on
      * @return Proposal's end block number.
      */
-    function _proposalDeadline(uint256 proposalId) internal view override returns (uint256) {
+    function _proposalEndBlock(uint256 proposalId) internal view override returns (uint256) {
         return IGovernorBravoExtended(governor).proposals(proposalId).endBlock;
     }
 }
