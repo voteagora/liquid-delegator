@@ -5,9 +5,8 @@ import "forge-std/Test.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
 import "../src/v1/Alligator.sol";
-import "./Utils.sol";
+import "./utils/Addresses.sol";
 import "./mock/NounsDAOMock.sol";
-import "./mock/NounsDAO2Mock.sol";
 
 contract AlligatorTest is Test {
     // =============================================================
@@ -772,7 +771,7 @@ contract AlligatorTest is Test {
     }
 
     function testRevert_validate_TooEarly() public {
-        NounsDAO2Mock nounsDAO_ = new NounsDAO2Mock();
+        NounsDAOMock nounsDAO_ = new NounsDAOMock();
         Alligator alligator_ = new Alligator(nounsDAO_, "", 0);
         alligator_.create(address(this), true);
 

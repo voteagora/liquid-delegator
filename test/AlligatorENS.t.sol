@@ -8,7 +8,7 @@ import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {Resolver} from "ens-contracts/resolvers/Resolver.sol";
 import "../src/v1/Alligator.sol";
 import "../src/v2/extensions/AlligatorV2Nouns.sol";
-import "./Utils.sol";
+import "./utils/Addresses.sol";
 
 contract AlligatorENSTest is Test {
     error AlreadyRegistered();
