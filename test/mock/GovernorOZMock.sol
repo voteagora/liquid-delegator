@@ -101,8 +101,8 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
     }
 
     function castVoteWithReason(uint256 proposalId, uint8 support, string calldata) public override returns (uint256) {
-        require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
-        require(_hasVoted[msg.sender] == false, "NounsDAO::castVoteInternal: voter already voted");
+        require(support <= 2, "castVoteInternal: invalid vote type");
+        require(_hasVoted[msg.sender] == false, "castVoteInternal: voter already voted");
 
         lastVoter = msg.sender;
         lastProposalId = proposalId;
@@ -148,8 +148,8 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
     function castRefundableVote(uint256 proposalId, uint8 support) external override {}
 
     function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata) external override {
-        require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
-        require(_hasVoted[msg.sender] == false, "NounsDAO::castVoteInternal: voter already voted");
+        require(support <= 2, "castVoteInternal: invalid vote type");
+        require(_hasVoted[msg.sender] == false, "castVoteInternal: voter already voted");
         uint256 startGas = gasleft();
 
         lastVoter = msg.sender;

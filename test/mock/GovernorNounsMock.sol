@@ -54,26 +54,9 @@ contract GovernorNounsMock is INounsDAOV2, IGovernorMock {
 
     function execute(uint256 proposalId) external {}
 
-    function castRefundableVote(uint256 proposalId, uint8 support) external {}
-
-    function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata) external {
-        require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
-        require(hasVoted[msg.sender] == false, "NounsDAO::castVoteInternal: voter already voted");
-        uint256 startGas = gasleft();
-
-        lastVoter = msg.sender;
-        lastProposalId = proposalId;
-        lastSupport = support;
-        totalVotes += 1;
-        hasVoted[msg.sender] = true;
-        emit VoteCast(msg.sender, proposalId, support, 0);
-
-        _refundGas(startGas);
-    }
-
     function castVoteWithReason(uint256 proposalId, uint8 support, string calldata) external {
-        require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
-        require(hasVoted[msg.sender] == false, "NounsDAO::castVoteInternal: voter already voted");
+        require(support <= 2, "castVoteInternal: invalid vote type");
+        require(hasVoted[msg.sender] == false, "castVoteInternal: voter already voted");
 
         lastVoter = msg.sender;
         lastProposalId = proposalId;
@@ -101,6 +84,27 @@ contract GovernorNounsMock is INounsDAOV2, IGovernorMock {
             bytes[] memory calldatas
         )
     {}
+
+    // =============================================================
+    //                           REFUND LOGIC
+    // =============================================================
+
+    function castRefundableVote(uint256 proposalId, uint8 support) external {}
+
+    function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata) external {
+        require(support <= 2, "castVoteInternal: invalid vote type");
+        require(hasVoted[msg.sender] == false, "castVoteInternal: voter already voted");
+        uint256 startGas = gasleft();
+
+        lastVoter = msg.sender;
+        lastProposalId = proposalId;
+        lastSupport = support;
+        totalVotes += 1;
+        hasVoted[msg.sender] = true;
+        emit VoteCast(msg.sender, proposalId, support, 0);
+
+        _refundGas(startGas);
+    }
 
     function _refundGas(uint256 startGas) internal {
         unchecked {
