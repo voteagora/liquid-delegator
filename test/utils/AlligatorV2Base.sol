@@ -606,8 +606,6 @@ abstract contract AlligatorV2Base is SetupV2 {
     }
 
     function testRevert_validate_NotValidAnymore() public {
-        vm.warp(100);
-
         address[] memory authority = new address[](2);
         authority[0] = address(this);
         authority[1] = Utils.alice;
@@ -616,13 +614,14 @@ abstract contract AlligatorV2Base is SetupV2 {
             permissions: 0x01,
             maxRedelegations: 1,
             notValidBefore: 0,
-            notValidAfter: uint32(block.timestamp - 10),
+            notValidAfter: 90,
             blocksBeforeVoteCloses: 0,
             customRule: address(0)
         });
 
         alligator.subDelegate(address(this), baseRules, Utils.alice, rules);
 
+        vm.warp(100);
         vm.prank(Utils.alice);
         vm.expectRevert(
             abi.encodeWithSelector(NotValidAnymore.selector, address(this), Utils.alice, rules.notValidAfter)
@@ -634,6 +633,29 @@ abstract contract AlligatorV2Base is SetupV2 {
         vm.prank(address(1));
         vm.expectRevert("Ownable: caller is not the owner");
         alligator._togglePause();
+    }
+
+    function testRevert_validate_TooEarly() public {
+        address[] memory authority = new address[](2);
+        authority[0] = address(this);
+        authority[1] = Utils.alice;
+
+        Rules memory rules = Rules({
+            permissions: 0x01,
+            maxRedelegations: 1,
+            notValidBefore: 0,
+            notValidAfter: 0,
+            blocksBeforeVoteCloses: 99,
+            customRule: address(0)
+        });
+
+        alligator.subDelegate(address(this), baseRules, Utils.alice, rules);
+
+        vm.prank(Utils.alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(TooEarly.selector, address(this), Utils.alice, rules.blocksBeforeVoteCloses)
+        );
+        alligator.castVote(baseRules, authority, 1, 1);
     }
 
     function _formatBatchData()

@@ -165,31 +165,4 @@ contract AlligatorV2NounsTest is AlligatorV2Base {
 
         // assertEq(nounders.balance, startBalance + refundAmount);
     }
-
-    function testRevert_validate_TooEarly() public {
-        GovernorNounsMock governor_ = new GovernorNounsMock();
-        AlligatorV2 alligator_ = new AlligatorV2Nouns(address(governor_), "", 0, address(this));
-        alligator_.create(address(this), baseRules, true);
-
-        address[] memory authority = new address[](2);
-        authority[0] = address(this);
-        authority[1] = Utils.alice;
-
-        Rules memory rules = Rules({
-            permissions: 0x01,
-            maxRedelegations: 1,
-            notValidBefore: 0,
-            notValidAfter: 0,
-            blocksBeforeVoteCloses: 99,
-            customRule: address(0)
-        });
-
-        alligator_.subDelegate(address(this), baseRules, Utils.alice, rules);
-
-        vm.prank(Utils.alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(TooEarly.selector, address(this), Utils.alice, rules.blocksBeforeVoteCloses)
-        );
-        alligator_.castVote(baseRules, authority, 1, 1);
-    }
 }
