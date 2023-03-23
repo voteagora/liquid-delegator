@@ -2,8 +2,9 @@
 pragma solidity ^0.8.13;
 
 import {INounsDAOV2} from "src/interfaces/INounsDAOV2.sol";
+import {IGovernorMock} from "./IGovernorMock.sol";
 
-contract NounsDAOMock is INounsDAOV2 {
+contract NounsDAOMock is INounsDAOV2, IGovernorMock {
     /// @notice Emitted when a voter cast a vote requesting a gas refund.
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
     event VoteCast(address voter, uint256 proposalId, uint8 support, uint256 votes);
@@ -84,7 +85,9 @@ contract NounsDAOMock is INounsDAOV2 {
 
     function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external {}
 
-    function proposals(uint256 proposalId) external view returns (ProposalCondensed memory) {}
+    function proposals(uint256 proposalId) external view returns (ProposalCondensed memory proposalCondensed) {
+        proposalCondensed.endBlock = block.number + 100;
+    }
 
     function getActions(
         uint256 proposalId
