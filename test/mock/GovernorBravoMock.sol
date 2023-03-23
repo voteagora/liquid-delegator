@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IGovernorOpenExtended} from "src/interfaces/IGovernorOpenExtended.sol";
+import {IGovernorBravoExtended} from "src/interfaces/IGovernorBravoExtended.sol";
 import {IGovernorMock} from "./IGovernorMock.sol";
 
-contract OpenMock is IGovernorMock {
+contract GovernorBravoMock is IGovernorBravoExtended, IGovernorMock {
     /// @notice Emitted when a voter cast a vote requesting a gas refund.
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
     event VoteCast(address voter, uint256 proposalId, uint8 support, uint256 votes);
@@ -36,6 +36,7 @@ contract OpenMock is IGovernorMock {
     function propose(
         address[] memory targets,
         uint256[] memory values,
+        string[] memory signatures,
         bytes[] memory calldatas,
         string memory description
     ) external returns (uint256) {}
@@ -84,8 +85,8 @@ contract OpenMock is IGovernorMock {
 
     function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external {}
 
-    function proposalDeadline(uint256 proposalId) external view returns (uint256 deadline) {
-        deadline = block.number + 100;
+    function proposals(uint256) external view returns (Proposal memory proposal) {
+        proposal.endBlock = block.number + 100;
     }
 
     function getActions(

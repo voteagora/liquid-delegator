@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IGovernorBravoExtended} from "src/interfaces/IGovernorBravoExtended.sol";
+import {INounsDAOV2} from "src/interfaces/INounsDAOV2.sol";
 import {IGovernorMock} from "./IGovernorMock.sol";
 
-contract BravoMock is IGovernorBravoExtended, IGovernorMock {
+// Like `GovernorNounsMock` but which refunds msg.sender instead of tx.origin
+contract GovernorNounsAltMock is INounsDAOV2, IGovernorMock {
     /// @notice Emitted when a voter cast a vote requesting a gas refund.
     event RefundableVote(address indexed voter, uint256 refundAmount, bool refundSent);
     event VoteCast(address voter, uint256 proposalId, uint8 support, uint256 votes);
@@ -85,8 +86,8 @@ contract BravoMock is IGovernorBravoExtended, IGovernorMock {
 
     function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external {}
 
-    function proposals(uint256 proposalId) external view returns (Proposal memory proposal) {
-        proposal.endBlock = block.number + 100;
+    function proposals(uint256) external view returns (ProposalCondensed memory proposalCondensed) {
+        proposalCondensed.endBlock = block.number + 100;
     }
 
     function getActions(
@@ -112,8 +113,8 @@ contract BravoMock is IGovernorBravoExtended, IGovernorMock {
             uint256 gasPrice = min(tx.gasprice, basefee + MAX_REFUND_PRIORITY_FEE);
             uint256 gasUsed = min(startGas - gasleft() + REFUND_BASE_GAS, MAX_REFUND_GAS_USED);
             uint256 refundAmount = min(gasPrice * gasUsed, balance);
-            (bool refundSent, ) = tx.origin.call{value: refundAmount}("");
-            emit RefundableVote(tx.origin, refundAmount, refundSent);
+            (bool refundSent, ) = msg.sender.call{value: refundAmount}("");
+            emit RefundableVote(msg.sender, refundAmount, refundSent);
         }
     }
 

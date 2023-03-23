@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {AlligatorV2Bravo} from "src/v2/extensions/AlligatorV2Bravo.sol";
 import "./utils/AlligatorV2Base.sol";
-import "./mock/BravoMock.sol";
+import "./mock/GovernorBravoMock.sol";
 
 contract AlligatorV2BravoTest is AlligatorV2Base {
     // =============================================================
@@ -13,7 +13,7 @@ contract AlligatorV2BravoTest is AlligatorV2Base {
     function setUp() public override {
         SetupV2.setUp();
 
-        governor = new BravoMock();
+        governor = new GovernorBravoMock();
         alligator = AlligatorV2(
             payable(
                 _create3Factory.deploy(

@@ -6,7 +6,7 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IGovernorBravo} from "../src/interfaces/IGovernorBravo.sol";
 import "../src/v1/Alligator.sol";
 import "./utils/Addresses.sol";
-import "./mock/NounsDAOMock.sol";
+import "./mock/GovernorNounsMock.sol";
 
 contract AlligatorTest is Test {
     // =============================================================
@@ -67,11 +67,11 @@ contract AlligatorTest is Test {
     // =============================================================
 
     Alligator public alligator;
-    NounsDAOMock public nounsDAO;
+    GovernorNounsMock public nounsDAO;
     address public root;
 
     function setUp() public {
-        nounsDAO = new NounsDAOMock();
+        nounsDAO = new GovernorNounsMock();
         alligator = new Alligator(nounsDAO, "", 0);
         root = alligator.create(address(this), true);
     }
@@ -771,7 +771,7 @@ contract AlligatorTest is Test {
     }
 
     function testRevert_validate_TooEarly() public {
-        NounsDAOMock nounsDAO_ = new NounsDAOMock();
+        GovernorNounsMock nounsDAO_ = new GovernorNounsMock();
         Alligator alligator_ = new Alligator(nounsDAO_, "", 0);
         alligator_.create(address(this), true);
 

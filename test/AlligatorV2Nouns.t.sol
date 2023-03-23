@@ -3,8 +3,8 @@ pragma solidity ^0.8.13;
 
 import {AlligatorV2Nouns} from "src/v2/extensions/AlligatorV2Nouns.sol";
 import "./utils/AlligatorV2Base.sol";
-import "./mock/NounsDAOMock.sol";
-import "./mock/NounsDAOAltMock.sol";
+import "./mock/GovernorNounsMock.sol";
+import "./mock/GovernorNounsAltMock.sol";
 
 contract AlligatorV2NounsTest is AlligatorV2Base {
     // =============================================================
@@ -12,13 +12,13 @@ contract AlligatorV2NounsTest is AlligatorV2Base {
     // =============================================================
 
     AlligatorV2 public alligatorAlt;
-    NounsDAOAltMock public governorAlt;
+    GovernorNounsAltMock public governorAlt;
     address public rootAlt;
 
     function setUp() public override {
         SetupV2.setUp();
 
-        governor = new NounsDAOMock();
+        governor = new GovernorNounsMock();
         alligator = AlligatorV2(
             payable(
                 _create3Factory.deploy(
@@ -32,7 +32,7 @@ contract AlligatorV2NounsTest is AlligatorV2Base {
         );
         root = alligator.create(address(this), baseRules, true); // selfProxy
 
-        governorAlt = new NounsDAOAltMock();
+        governorAlt = new GovernorNounsAltMock();
         alligatorAlt = AlligatorV2(
             payable(
                 _create3Factory.deploy(
@@ -167,7 +167,7 @@ contract AlligatorV2NounsTest is AlligatorV2Base {
     }
 
     function testRevert_validate_TooEarly() public {
-        NounsDAOMock governor_ = new NounsDAOMock();
+        GovernorNounsMock governor_ = new GovernorNounsMock();
         AlligatorV2 alligator_ = new AlligatorV2Nouns(address(governor_), "", 0, address(this));
         alligator_.create(address(this), baseRules, true);
 
