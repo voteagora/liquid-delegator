@@ -6,6 +6,7 @@ import {IENSReverseRegistrar} from "../interfaces/IENSReverseRegistrar.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import "../structs/Rules.sol";
 
+// Proxy implementation that handles gas refunds from governor
 contract ProxyV2 is IERC1271 {
     address internal immutable alligator;
     address internal immutable governor;

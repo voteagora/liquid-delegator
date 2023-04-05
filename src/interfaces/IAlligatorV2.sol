@@ -5,43 +5,6 @@ import "../structs/Rules.sol";
 
 interface IAlligatorV2 {
     // =============================================================
-    //                             EVENTS
-    // =============================================================
-
-    event ProxyDeployed(address indexed owner, Rules proxyRules, address proxy);
-    event SubDelegation(address indexed from, address indexed to, Rules subDelegateRules);
-    event SubDelegations(address indexed from, address[] to, Rules[] subDelegateRules);
-    event SubDelegationProxy(
-        address indexed from,
-        address indexed to,
-        Rules subDelegateRules,
-        address indexed proxyOwner,
-        Rules proxyRules
-    );
-    event SubDelegationProxies(
-        address indexed from,
-        address[] to,
-        Rules[] subDelegateRules,
-        address indexed proxyOwner,
-        Rules proxyRules
-    );
-    event VoteCast(
-        address indexed proxy,
-        address indexed voter,
-        address[] authority,
-        uint256 proposalId,
-        uint8 support
-    );
-    event VotesCast(
-        address[] proxies,
-        address indexed voter,
-        address[][] authorities,
-        uint256 proposalId,
-        uint8 support
-    );
-    event Signed(address indexed proxy, address[] authority, bytes32 messageHash);
-
-    // =============================================================
     //                      PROXY OPERATIONS
     // =============================================================
 
