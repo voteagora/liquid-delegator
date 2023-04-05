@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {AlligatorV2Open} from "src/v2/extensions/AlligatorV2Open.sol";
+import {AlligatorV2OZ} from "src/v2/extensions/AlligatorV2OZ.sol";
 import "./utils/AlligatorV2Base.sol";
 import "./mock/GovernorOZMock.sol";
 
-contract AlligatorV2OpenTest is AlligatorV2Base {
+contract AlligatorV2OZTest is AlligatorV2Base {
     // =============================================================
     //                             TESTS
     // =============================================================
@@ -18,10 +18,7 @@ contract AlligatorV2OpenTest is AlligatorV2Base {
             payable(
                 _create3Factory.deploy(
                     keccak256(bytes("SALT")),
-                    bytes.concat(
-                        type(AlligatorV2Open).creationCode,
-                        abi.encode(address(governor), "", 0, address(this))
-                    )
+                    bytes.concat(type(AlligatorV2OZ).creationCode, abi.encode(address(governor), "", 0, address(this)))
                 )
             )
         );

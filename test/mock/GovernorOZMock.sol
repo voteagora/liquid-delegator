@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IGovernorOpenExtended} from "src/interfaces/IGovernorOpenExtended.sol";
+import {IGovernorOZExtended} from "src/interfaces/IGovernorOZExtended.sol";
 import {IGovernorMock} from "./IGovernorMock.sol";
 import "@openzeppelin/contracts/utils/Timers.sol";
 
-contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
+contract GovernorOZMock is IGovernorOZExtended, IGovernorMock {
     // =============================================================
     //                            STORAGE
     // =============================================================
@@ -115,6 +115,7 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
         totalVotes += 1;
         _hasVoted[msg.sender] = true;
         emit VoteCast(msg.sender, proposalId, support, 0, "");
+        return 0;
     }
 
     function castVoteWithReason(
@@ -131,6 +132,7 @@ contract GovernorOZMock is IGovernorOpenExtended, IGovernorMock {
         totalVotes += 1;
         _hasVoted[msg.sender] = true;
         emit VoteCast(msg.sender, proposalId, support, 0, reason);
+        return 0;
     }
 
     function castVoteWithReasonAndParams(

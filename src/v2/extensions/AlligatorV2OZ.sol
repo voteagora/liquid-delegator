@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "../AlligatorV2.sol";
-import {IGovernorOpenExtended} from "../../interfaces/IGovernorOpenExtended.sol";
+import {IGovernorOZExtended} from "../../interfaces/IGovernorOZExtended.sol";
 
-contract AlligatorV2Open is AlligatorV2 {
+contract AlligatorV2OZ is AlligatorV2 {
     // =============================================================
     //                         CONSTRUCTOR
     // =============================================================
@@ -38,7 +38,7 @@ contract AlligatorV2Open is AlligatorV2 {
         bytes[] calldata calldatas,
         string memory description
     ) internal override returns (uint256) {
-        return IGovernorOpenExtended(proxy).propose(targets, values, calldatas, description);
+        return IGovernorOZExtended(proxy).propose(targets, values, calldatas, description);
     }
 
     /**
@@ -49,7 +49,7 @@ contract AlligatorV2Open is AlligatorV2 {
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      */
     function _castVote(address proxy, uint256 proposalId, uint8 support) internal override {
-        IGovernorOpenExtended(proxy).castVote(proposalId, support);
+        IGovernorOZExtended(proxy).castVote(proposalId, support);
     }
 
     /**
@@ -66,7 +66,7 @@ contract AlligatorV2Open is AlligatorV2 {
         uint8 support,
         string calldata reason
     ) internal override {
-        IGovernorOpenExtended(proxy).castVoteWithReason(proposalId, support, reason);
+        IGovernorOZExtended(proxy).castVoteWithReason(proposalId, support, reason);
     }
 
     /**
@@ -83,7 +83,7 @@ contract AlligatorV2Open is AlligatorV2 {
         uint8 support,
         string calldata reason
     ) internal override {
-        IGovernorOpenExtended(proxy).castRefundableVoteWithReason(proposalId, support, reason);
+        IGovernorOZExtended(proxy).castRefundableVoteWithReason(proposalId, support, reason);
     }
 
     /**
@@ -93,6 +93,6 @@ contract AlligatorV2Open is AlligatorV2 {
      * @return Proposal's end block number.
      */
     function _proposalEndBlock(uint256 proposalId) internal view override returns (uint256) {
-        return IGovernorOpenExtended(governor).proposalDeadline(proposalId);
+        return IGovernorOZExtended(governor).proposalDeadline(proposalId);
     }
 }
