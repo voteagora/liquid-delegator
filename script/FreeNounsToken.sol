@@ -20,7 +20,7 @@ contract FreeNounsTonken is NounsToken {
         IProxyRegistry proxyRegistry
     ) NounsToken(noundersDAO, minter, descriptor, seeder, proxyRegistry) {}
 
-    function mint(address to, uint256 tokenId) public {
-        _mintTo(to, tokenId);
+    function mint(address to) public {
+        _mintTo(to, _currentNounId++);
     }
 }

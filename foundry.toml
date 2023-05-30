@@ -10,9 +10,11 @@ optimizer_runs = 200
 # via_ir = true
 
 [rpc_endpoints]
-goerli = "${GOERLI_RPC_URL}"
 mainnet = "${MAINNET_RPC_URL}"
+goerli = "${GOERLI_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
 
 [etherscan]
-goerli = {key = "${ETHERSCAN_API_KEY}", url = "https://api-goerli.etherscan.io/api"}
 mainnet = {key = "${ETHERSCAN_API_KEY}"}
+goerli = {key = "${ETHERSCAN_API_KEY}", url = "https://api-goerli.etherscan.io/api"}
+sepolia = {key = "${ETHERSCAN_API_KEY}", url = "https://api-sepolia.etherscan.io/api"}
