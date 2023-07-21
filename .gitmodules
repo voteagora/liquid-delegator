@@ -17,7 +17,7 @@
 [submodule "lib/nouns-monorepo"]
 	path = lib/nouns-monorepo
 	url = https://github.com/nounsDAO/nouns-monorepo
-	branch = master
+	branch = verbs-dao-v3-dao-split
 [submodule "lib/create3-factory"]
 	path = lib/create3-factory
 	url = https://github.com/zeframlou/create3-factory
