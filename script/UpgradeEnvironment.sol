@@ -9,12 +9,12 @@ import {NounsDAOExecutor} from "noun-contracts/governance/NounsDAOExecutor.sol";
 import {NounsDAOLogicV2} from "noun-contracts/governance/NounsDAOLogicV2.sol";
 import {NounsDAOLogicV3} from "noun-contracts/governance/NounsDAOLogicV3.sol";
 import {NounsDAOProxyV2} from "noun-contracts/governance/NounsDAOProxyV2.sol";
-import {NounsDAOParams, DynamicQuorumParams} from "noun-contracts/governance/NounsDAOInterfaces.sol";
+import {NounsDAOStorageV3} from "noun-contracts/governance/NounsDAOInterfaces.sol";
 import {INounsDAOV2} from "../src/interfaces/INounsDAOV2.sol";
 import {FreeNounsTonken} from "./FreeNounsToken.sol";
 
 contract InitEnvironment is Script {
-    NounsDAOProxyV2 proxy = NounsDAOProxyV2(0x461208f0073e3b1C9Cec568DF2fcACD0700C9B7a);
+    NounsDAOProxyV2 proxy = NounsDAOProxyV2(payable(0x461208f0073e3b1C9Cec568DF2fcACD0700C9B7a));
     address constant nounsToken = 0x05d570185F6e2d29AdaBa1F36435f50Bc44A6f17;
     address constant timelock = 0x3daE99d2Fbc2d625f7C9dE5b602C0a78c35d3320;
 
@@ -30,7 +30,7 @@ contract InitEnvironment is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // TODO: figure out correct params
-        NounsDAOParams memory daoParams_ = NounsDAOParams({
+        NounsDAOStorageV3.NounsDAOParams memory daoParams_ = NounsDAOStorageV3.NounsDAOParams({
             votingPeriod: VOTING_PERIOD,
             votingDelay: VOTING_DELAY,
             proposalThresholdBPS: PROPOSAL_THRESHOLD,
@@ -38,7 +38,7 @@ contract InitEnvironment is Script {
             objectionPeriodDurationInBlocks: 360,
             proposalUpdatablePeriodInBlocks: 3600
         });
-        DynamicQuorumParams memory dynamicQuorumParams_ = DynamicQuorumParams({
+        NounsDAOStorageV3.DynamicQuorumParams memory dynamicQuorumParams_ = NounsDAOStorageV3.DynamicQuorumParams({
             minQuorumVotesBPS: QUORUM_VOTES_BPS,
             maxQuorumVotesBPS: QUORUM_VOTES_BPS,
             quorumCoefficient: 0
