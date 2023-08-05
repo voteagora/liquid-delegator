@@ -69,7 +69,7 @@ contract Alligator is IAlligator, ENSHelper, Ownable, Pausable {
      *
      * @return endpoint Address of the Proxy
      */
-    function create(address owner, bool registerEnsName) public returns (address endpoint) {
+    function create(address owner, bool registerEnsName) public virtual returns (address endpoint) {
         endpoint = address(new Proxy{salt: bytes32(uint256(uint160(owner)))}(address(governor)));
         emit ProxyDeployed(owner, endpoint);
 
