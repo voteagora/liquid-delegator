@@ -201,3 +201,6 @@ contract AlligatorSign is Alligator {
         return ECDSA.toTypedDataHash(domainSeparator, structHash);
     }
 }
+
+// TODO: Test addSignature works, using a fork on sepolia pointing an existing prop candidate
+// TODO: Add unsign and unsignBatch OR cancelSig and cancelSigBatch?
