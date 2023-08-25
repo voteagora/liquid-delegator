@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {AlligatorV2OZ} from "src/v2/extensions/AlligatorV2OZ.sol";
-import "./utils/AlligatorV2Base.sol";
+import "./AlligatorV2Base.sol";
 import "./mock/GovernorOZMock.sol";
 
 contract AlligatorV2OZTest is AlligatorV2Base {

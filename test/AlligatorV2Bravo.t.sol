@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {AlligatorV2Bravo} from "src/v2/extensions/AlligatorV2Bravo.sol";
-import "./utils/AlligatorV2Base.sol";
+import "./AlligatorV2Base.sol";
 import "./mock/GovernorBravoMock.sol";
 
 contract AlligatorV2BravoTest is AlligatorV2Base {

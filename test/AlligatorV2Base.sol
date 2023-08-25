@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./SetupV2.sol";
+import "./utils/SetupV2.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

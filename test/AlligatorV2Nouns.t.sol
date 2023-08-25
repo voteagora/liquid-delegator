@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {AlligatorV2Nouns} from "src/v2/extensions/AlligatorV2Nouns.sol";
-import "./utils/AlligatorV2Base.sol";
+import "./AlligatorV2Base.sol";
 import "./mock/GovernorNounsMock.sol";
 import "./mock/GovernorNounsAltMock.sol";
 
